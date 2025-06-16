@@ -5,12 +5,12 @@ namespace Wappo\LaravelSchemaApi\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Wappo\LaravelSchemaApi\LaravelSchemaApi
+ * @see \Wappo\LaravelSchemaApi\SchemaApi
  */
-class LaravelSchemaApi extends Facade
+class SchemaApi extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Wappo\LaravelSchemaApi\LaravelSchemaApi::class;
+        return \Wappo\LaravelSchemaApi\SchemaApi::class;
     }
 }

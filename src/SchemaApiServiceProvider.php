@@ -4,9 +4,9 @@ namespace Wappo\LaravelSchemaApi;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Wappo\LaravelSchemaApi\Commands\LaravelSchemaApiCommand;
+use Wappo\LaravelSchemaApi\Commands\SchemaApiCommand;
 
-class LaravelSchemaApiServiceProvider extends PackageServiceProvider
+class SchemaApiServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -20,6 +20,6 @@ class LaravelSchemaApiServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasMigration('create_laravel_schema_api_table')
-            ->hasCommand(LaravelSchemaApiCommand::class);
+            ->hasCommand(SchemaApiCommand::class);
     }
 }

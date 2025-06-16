@@ -1,6 +1,6 @@
 <?php
 
-// config for Wappo/LaravelSchemaApi
+// config for Wappo/SchemaApi
 return [
 
 ];

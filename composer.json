@@ -58,7 +58,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Wappo\\LaravelSchemaApi\\LaravelSchemaApiServiceProvider"
+                "SchemaApiServiceProvider"
             ]
         }
     },

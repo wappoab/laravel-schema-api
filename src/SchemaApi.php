@@ -2,4 +2,4 @@
 
 namespace Wappo\LaravelSchemaApi;
 
-class LaravelSchemaApi {}
+class SchemaApi {}

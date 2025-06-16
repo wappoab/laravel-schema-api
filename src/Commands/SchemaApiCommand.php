@@ -4,7 +4,7 @@ namespace Wappo\LaravelSchemaApi\Commands;
 
 use Illuminate\Console\Command;
 
-class LaravelSchemaApiCommand extends Command
+class SchemaApiCommand extends Command
 {
     public $signature = 'laravel-schema-api';
 
