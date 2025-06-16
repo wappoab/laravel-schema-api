@@ -59,10 +59,7 @@
         "laravel": {
             "providers": [
                 "Wappo\\LaravelSchemaApi\\LaravelSchemaApiServiceProvider"
-            ],
-            "aliases": {
-                "LaravelSchemaApi": "Wappo\\LaravelSchemaApi\\Facades\\LaravelSchemaApi"
-            }
+            ]
         }
     },
     "minimum-stability": "dev",
