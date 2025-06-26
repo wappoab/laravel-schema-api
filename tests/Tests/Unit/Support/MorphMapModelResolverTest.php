@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Wappo\LaravelSchemaApi\Support\MorphMapModelResolver;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
+
+beforeEach(function () {
+    Relation::morphMap([
+        'posts' => Post::class,
+    ]);
+
+    $this->resolver = new MorphMapModelResolver();
+});
+
+it('resolves using morph map', function () {
+    expect($this->resolver->resolve('posts'))->toBe(Post::class);
+});
+
+it('is invokable', function () {
+    expect(($this->resolver)('posts'))->toBe(Post::class);
+});
+
+it('returns null for unknown alias', function () {
+    expect($this->resolver->resolve('non_existing'))->toBeNull();
+});
