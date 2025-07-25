@@ -1,6 +1,6 @@
 <?php
 
-// config for Wappo/SchemaApi
+// config for Wappo/LaravelSchemaApi
 return [
 
     /*
@@ -14,6 +14,14 @@ return [
     |
     */
     'date_format' => env('SCHEMA_API_DATE_FORMAT', 'Y-m-d\TH:i:sP'),
+
+
+    'http' => [
+        'base_path' => env('SCHEMA_API_HTTP_BASE_PATH', '/schema-api'),
+        'middleware' => env('SCHEMA_API_HTTP_MIDDLEWARE', 'api'),
+        'gzip_level' => env('SCHEMA_API_GZIP_LEVEL', 0),
+        'json_encode_flags' => env('SCHEMA_API_JSON_ENCODE_FLAGS', JSON_UNESCAPED_UNICODE),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -29,17 +37,17 @@ return [
 
     'resolvers' => [
         'namespace' => [
-            'class' => \Wappo\LaravelSchemaApi\Support\NamespaceModelResolver::class,
+            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
             'name' => env('SCHEMA_API_MODEL_RESOLVER_NAMESPACE', 'App\\Models'),
         ],
         'morph_map' => [
-            'class' => \Wappo\LaravelSchemaApi\Support\MorphMapModelResolver::class,
+            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver::class,
         ],
         'chained' => [
-            'class' => \Wappo\LaravelSchemaApi\Support\NamespaceModelResolver::class,
+            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
             'resolvers' => [
-                \Wappo\LaravelSchemaApi\Support\NamespaceModelResolver::class,
-                \Wappo\LaravelSchemaApi\Support\MorphMapModelResolver::class,
+                \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
+                \Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver::class,
             ],
         ],
     ],

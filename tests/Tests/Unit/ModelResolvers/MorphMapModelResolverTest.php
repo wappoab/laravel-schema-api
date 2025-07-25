@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Wappo\LaravelSchemaApi\Support\MorphMapModelResolver;
+use Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
 
 beforeEach(function () {
@@ -15,13 +15,9 @@ beforeEach(function () {
 });
 
 it('resolves using morph map', function () {
-    expect($this->resolver->resolve('posts'))->toBe(Post::class);
-});
-
-it('is invokable', function () {
-    expect(($this->resolver)('posts'))->toBe(Post::class);
+    expect($this->resolver->get('posts'))->toBe(Post::class);
 });
 
 it('returns null for unknown alias', function () {
-    expect($this->resolver->resolve('non_existing'))->toBeNull();
+    expect($this->resolver->get('non_existing'))->toBeNull();
 });

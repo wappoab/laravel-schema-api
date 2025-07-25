@@ -85,6 +85,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('title');
             $table->string('slug')->unique();
+            $table->string('status');
             $table->text('content')->nullable();
             $table->foreignUuid('author_id')
                 ->nullable()
@@ -100,6 +101,7 @@ return new class extends Migration
         Schema::create('categories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
+            $table->string('slug')->nullable();
             $table->foreignUuid('author_id')
                 ->nullable()
                 ->references('id')

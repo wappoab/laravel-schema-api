@@ -1,6 +1,8 @@
 <?php
 
-namespace Wappo\LaravelSchemaApi\Support;
+declare(strict_types=1);
+
+namespace Wappo\LaravelSchemaApi\ModelResolvers;
 
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 
@@ -12,19 +14,14 @@ class ChainedModelResolver implements ModelResolverInterface
     {
         $this->resolvers = $resolvers;
     }
-    public function resolve(string $table): ?string
+    public function get(string $table): ?string
     {
         foreach ($this->resolvers as $resolver) {
-            $class = $resolver->resolve($table);
+            $class = $resolver->get($table);
             if ($class) {
                 return $class;
             }
         }
         return null;
-    }
-
-    public function __invoke(string $table): ?string
-    {
-        return $this->resolve($table);
     }
 }

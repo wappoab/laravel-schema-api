@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Wappo\LaravelSchemaApi\Support;
+namespace Wappo\LaravelSchemaApi\ModelResolvers;
 
 use Illuminate\Support\Str;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 
 class NamespaceModelResolver implements ModelResolverInterface
 {
-    public function resolve(string $table): ?string
+    public function get(string $table): ?string
     {
         $modelClass = Str::finish(config('schema-api.resolvers.namespace.name'), '\\') . Str::studly(Str::singular($table));
         if (!class_exists($modelClass)) {
@@ -17,10 +17,5 @@ class NamespaceModelResolver implements ModelResolverInterface
         }
 
         return $modelClass;
-    }
-
-    public function __invoke(string $table): ?string
-    {
-        return $this->resolve($table);
     }
 }

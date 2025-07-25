@@ -1,0 +1,23 @@
+[
+    {
+        "id": "00000000-0004-0000-0000-000000000001",
+        "title": "Post Title",
+        "slug": "post-title",
+        "content": "Content content content",
+        "status": "PUBLISHED"
+    },
+    {
+        "id": "00000000-0004-0000-0000-000000000002",
+        "title": "Post Title2",
+        "slug": "post-title2",
+        "content": "Content content content test",
+        "status": "DRAFT"
+    },
+    {
+        "id": "00000000-0004-0000-0000-000000000003",
+        "title": "Post Title3",
+        "slug": "post-title3",
+        "content": "Content content content test test",
+        "status": "ARCHIVED"
+    }
+]
