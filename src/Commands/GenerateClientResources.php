@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wappo\LaravelSchemaApi\Commands;
 
 use Exception;
@@ -7,7 +9,6 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
@@ -26,7 +27,7 @@ class GenerateClientResources extends Command
      *
      * @var string
      */
-    protected $description = 'Generates the fat client supporting files';
+    protected $description = 'Generates the schema-api client supporting files';
 
     /**
      * @var array<class-string<Model>> $models
@@ -42,23 +43,26 @@ class GenerateClientResources extends Command
         $enumCases = [];
         $collections = [];
         foreach ($tables as $table) {
-            $model = ModelResolver::get($table);
+            $collectionName = $table['name'];
 
-            $collectionName = $table;
+            $model = ModelResolver::get($collectionName);
+            if(!$model) {
+                continue;
+            }
             $enumCases[class_basename($model)] = $collectionName;
-
             $collections[] = [
                 'modelName' => class_basename($model),
                 'collectionName' => $collectionName,
                 'morphAlias' => Relation::getMorphAlias($model),
             ];
-
-            $this->buildModelTypeAndBuilder($model);
-            $this->buildModelForm($model, $collectionName);
         }
 
+        //dd($collections);
+
         foreach ($collections as $collection) {
-            $this->buildCollectionStore($collection['collectionName'], $collection['modelName']);
+            $this->buildModelTypeAndBuilder($collection['modelName'], $collection['collectionName']);
+            $this->buildModelForm($collection['modelName'], $collection['collectionName']);
+            $this->buildCollectionStore($collection['modelName'], $collection['collectionName']);
         }
 
         File::put(
@@ -105,7 +109,7 @@ class GenerateClientResources extends Command
         return self::SUCCESS;
     }
 
-    protected function buildCollectionStore(string $collectionName, string $modelName): void
+    protected function buildCollectionStore(string $modelName, string $collectionName): void
     {
         File::put(
             base_path('./frontend/stores/collections/' . $collectionName . '.ts'),
@@ -124,7 +128,7 @@ class GenerateClientResources extends Command
         $target = base_path('./frontend/components/forms/' . $modelName . 'Form.vue');
 
         if (!is_file($target)) {
-            $this->info("Creating $target");
+            $this->comment("Creating $target");
             File::put(
                 $target,
                 Blade::render(
@@ -136,20 +140,18 @@ class GenerateClientResources extends Command
                 )
             );
         } else {
-            $this->info("Skipping $target");
+            $this->comment("Skipping $target");
         }
     }
 
-    protected function buildModelTypeAndBuilder(string $modelClass) {
-        $modelName = class_basename($modelClass);
+    protected function buildModelTypeAndBuilder(string $modelName, string $collectionName): void {
         $properties = [];
-
-        $columns = DB::getSchemaBuilder()->getColumns((new $modelClass())->getTable());
+        $columns = Schema::getColumns($collectionName);
         foreach ($columns as $column) {
             $type = $this->databaseColumnTypeToTypescriptType($column['type'], $column['type_name']);
             $type .= ' | null';
 
-            $default = explode('::', $column['default'])[0];
+            $default = explode('::', $column['default']??'')[0];
             $properties[$column['name']] = $type;
             $defaults[$column['name']] = empty($default) ? 'null' : $default;
         }
@@ -173,7 +175,7 @@ class GenerateClientResources extends Command
             return 'string';
         }
 
-        if ($type_name === 'timestamp' || $type_name === 'timestamptz') {
+        if ($type_name === 'timestamp' || $type_name === 'timestamptz' || $type_name === 'datetime' || $type_name === 'datetimetz') {
             return 'Date';
         }
 

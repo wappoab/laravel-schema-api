@@ -58,9 +58,14 @@ class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/Migrations');
     }
 
-    protected function getFixture(string $path): array
+    protected function getFixture(string $path): array|string
     {
-        return json_decode(file_get_contents($path), true);
+        if(pathinfo($path, PATHINFO_EXTENSION) === 'json') {
+            return json_decode(file_get_contents($path), true);
+        }
+        else {
+            return file_get_contents($path);
+        }
     }
 
     public function setFixture(string $path, string|array $data): false|int

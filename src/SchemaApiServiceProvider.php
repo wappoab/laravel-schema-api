@@ -6,11 +6,10 @@ namespace Wappo\LaravelSchemaApi;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Wappo\LaravelSchemaApi\Commands\SchemaApiCommand;
+use Wappo\LaravelSchemaApi\Commands\GenerateClientResources;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ResourceResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ValidationRulesResolverInterface;
-use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Support\ModelResourceResolver;
 use Wappo\LaravelSchemaApi\Support\ValidationRulesResolver;
 
@@ -27,7 +26,7 @@ class SchemaApiServiceProvider extends PackageServiceProvider
             ->name('laravel-schema-api')
             ->hasConfigFile()
             ->hasRoute('api')
-            ->hasCommand(SchemaApiCommand::class);
+            ->hasCommand(GenerateClientResources::class);
     }
 
     public function packageRegistered() {
