@@ -14,8 +14,8 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: mbstring, exif, pcntl, bcmath, pgsql, pdo_pgsql
+          php-version: '8.4'
+          extensions: mbstring, exif, pcntl, bcmath
           ini-values: post_max_size=256M, max_execution_time=180
           coverage: none
 
