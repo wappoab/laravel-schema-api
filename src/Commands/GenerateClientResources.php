@@ -54,13 +54,12 @@ class GenerateClientResources extends Command
                 'modelName' => class_basename($model),
                 'collectionName' => $collectionName,
                 'morphAlias' => Relation::getMorphAlias($model),
+                'modelFQN' => $model,
             ];
         }
 
-        //dd($collections);
-
         foreach ($collections as $collection) {
-            $this->buildModelTypeAndBuilder($collection['modelName'], $collection['collectionName']);
+            $this->buildModelTypeAndBuilder($collection['modelFQN'], $collection['collectionName']);
             $this->buildModelForm($collection['modelName'], $collection['collectionName']);
             $this->buildCollectionStore($collection['modelName'], $collection['collectionName']);
         }
@@ -144,16 +143,23 @@ class GenerateClientResources extends Command
         }
     }
 
-    protected function buildModelTypeAndBuilder(string $modelName, string $collectionName): void {
+    protected function buildModelTypeAndBuilder(string $modelFQN, string $collectionName): void {
+        $modelName = class_basename($modelFQN);
+        $instance = new $modelFQN();
+        $casts = $instance->getCasts();
+        $defaults = [];
         $properties = [];
         $columns = Schema::getColumns($collectionName);
         foreach ($columns as $column) {
-            $type = $this->databaseColumnTypeToTypescriptType($column['type'], $column['type_name']);
-            $type .= ' | null';
+            $type = $this->databaseColumnTypeToTypescriptType($column['type'], $column['type_name'], $casts[$column['name']]??null);
 
             $default = explode('::', $column['default']??'')[0];
-            $properties[$column['name']] = $type;
-            $defaults[$column['name']] = empty($default) ? 'null' : $default;
+            $properties[$column['name']] = $type . ' | null';
+            $defaults[$column['name']] = match (true) {
+                $type === 'boolean' => $default === '1' ? 'true' : 'false',
+                empty($default) => 'null',
+                default => $default,
+            };
         }
 
         File::put(
@@ -169,9 +175,9 @@ class GenerateClientResources extends Command
         );
     }
 
-    protected function databaseColumnTypeToTypescriptType(string $type, string $type_name): string
+    protected function databaseColumnTypeToTypescriptType(string $type, string $type_name, ?string $cast): string
     {
-        if ($type_name === 'uuid' || $type_name === 'varchar' || $type_name === 'text') {
+        if ($cast === 'string' || $type_name === 'uuid' || $type_name === 'varchar' || $type_name === 'text') {
             return 'string';
         }
 
@@ -183,13 +189,14 @@ class GenerateClientResources extends Command
             return 'Array<any>|Record<string, any>';
         }
 
-        if ($type === 'integer') {
+        if ($cast === 'boolean' || $type === 'boolean') {
+            return 'boolean';
+        }
+
+        if ($type_name === 'tinyint' || $type === 'integer') {
             return 'number';
         }
 
-        if ($type === 'boolean') {
-            return 'boolean';
-        }
 
         throw new Exception("Unknown type $type or type_name $type_name");
     }
