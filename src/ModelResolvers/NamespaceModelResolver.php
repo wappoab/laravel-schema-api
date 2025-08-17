@@ -11,7 +11,7 @@ class NamespaceModelResolver implements ModelResolverInterface
 {
     public function get(string $table): ?string
     {
-        $modelClass = Str::finish(config('schema-api.resolvers.namespace.name'), '\\') . Str::studly(Str::singular($table));
+        $modelClass = Str::finish(config('schema-api.model_resolvers.namespace.name'), '\\') . Str::studly(Str::singular($table));
         if (!class_exists($modelClass)) {
             return null;
         }
