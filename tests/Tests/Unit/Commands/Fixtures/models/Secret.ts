@@ -4,6 +4,7 @@ export type Secret = {
     id: string | null,
     launch_code: string | null,
     nuke_payload: string | null,
+    is_armed: boolean | null,
     created_at: Date | null,
     updated_at: Date | null,
 }
@@ -12,6 +13,7 @@ export const SecretDefaults = {
     id: null,
     launch_code: null,
     nuke_payload: null,
+    is_armed: false,
     created_at: null,
     updated_at: null,
 } as Secret;

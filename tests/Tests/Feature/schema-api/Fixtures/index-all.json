@@ -1,5 +1,19 @@
 [
     {
+        "id": "00000000-0004-0000-0000-000000000003",
+        "type": "categories",
+        "op": "C",
+        "attr": {
+            "id": "00000000-0004-0000-0000-000000000003",
+            "name": "Category 1",
+            "slug": "category-1",
+            "author_id": null,
+            "created_at": "2025-01-01T00:00:00+00:00",
+            "updated_at": "2025-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    },
+    {
         "id": "00000000-0004-0000-0000-000000000001",
         "type": "posts",
         "op": "C",
@@ -25,22 +39,6 @@
             "slug": "post-title2",
             "content": "Content content content test",
             "status": "DRAFT",
-            "author_id": null,
-            "created_at": "2025-01-01T00:00:00+00:00",
-            "updated_at": "2025-01-01T00:00:00+00:00",
-            "deleted_at": null
-        }
-    },
-    {
-        "id": "00000000-0004-0000-0000-000000000003",
-        "type": "posts",
-        "op": "C",
-        "attr": {
-            "id": "00000000-0004-0000-0000-000000000003",
-            "title": "Post Title3",
-            "slug": "post-title3",
-            "content": "Content content content test test",
-            "status": "ARCHIVED",
             "author_id": null,
             "created_at": "2025-01-01T00:00:00+00:00",
             "updated_at": "2025-01-01T00:00:00+00:00",
