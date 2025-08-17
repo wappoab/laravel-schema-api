@@ -16,9 +16,9 @@ class SecretFactory extends Factory
     public function definition(): array
     {
         return [
-            'real_name' => $this->faker->name(),
-            'noc_list_name' => $this->faker->name(),
-            'is_dead' => $this->faker->boolean(),
+            'launch_code' => $this->faker->name(),
+            'nuke_payload' => $this->faker->name(),
+            'is_armed' => $this->faker->boolean(),
         ];
     }
 }
