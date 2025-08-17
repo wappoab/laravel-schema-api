@@ -12,6 +12,6 @@ Route::middleware(config('schema-api.http.middleware'))
     ->prefix(config('schema-api.http.base_path'))
     ->group(function () {
         Route::get('/{table}/{id}', SchemaApiGetController::class)->name('show');
-        Route::get('/{table}', SchemaApiIndexController::class)->name('index');
+        Route::get('/{table?}', SchemaApiIndexController::class)->name('index');
         Route::put('/sync', SchemaApiSyncController::class)->name('sync');
     });
