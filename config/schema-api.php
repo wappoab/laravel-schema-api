@@ -28,27 +28,55 @@ return [
     | Model resolver
     |--------------------------------------------------------------------------
     |
+    | Set resolver class that translate type alias (table name) to a model name.
+    | Each resolver have its own set of configuration apart from the actual
+    | class that does the resolving magic.
+    |
+    */
+    'model_resolver' => [
+        'driver' => 'namespace',
+        'drivers' => [
+            'namespace' => [
+                'class' => \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
+                'namespace' => env('SCHEMA_API_MODEL_RESOLVER_NAMESPACE', 'App\\Models'),
+            ],
+            'morph_map' => [
+                'class' => \Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver::class,
+            ],
+        ],
+        'decorators' => [
+            \Wappo\LaravelSchemaApi\Support\ValidatingModelResolver::class,
+            \Wappo\LaravelSchemaApi\Support\CachingModelResolver::class,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resource resolver
+    |--------------------------------------------------------------------------
+    |
     | Set resolver class that translate url alias to a model name.
     | Each resolver have its own set of configuration apart from the actual
     | class that does the resolving magic.
     |
     */
-    'model_resolver' => 'namespace',
-
-    'resolvers' => [
-        'namespace' => [
-            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
-            'name' => env('SCHEMA_API_MODEL_RESOLVER_NAMESPACE', 'App\\Models'),
-        ],
-        'morph_map' => [
-            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver::class,
-        ],
-        'chained' => [
-            'class' => \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
-            'resolvers' => [
-                \Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver::class,
-                \Wappo\LaravelSchemaApi\ModelResolvers\MorphMapModelResolver::class,
+    'resource_resolver' => [
+        'driver' => 'namespace',
+        'drivers' => [
+            'namespace' => [
+                'class' => \Wappo\LaravelSchemaApi\ResourceResolvers\NamespaceResourceResolver::class,
+                'namespace' => env('SCHEMA_API_RESOURCE_RESOLVER_NAMESPACE', 'App\\Resources'),
             ],
+            'attribute' => [
+                'class' => \Wappo\LaravelSchemaApi\ResourceResolvers\UseSchemaApiJsonResourceAttributeResolver::class,
+            ],
+            'guesser' => [
+                'class' => \Wappo\LaravelSchemaApi\ResourceResolvers\GuessResourceNameResolver::class,
+            ],
+        ],
+        'decorators' => [
+            \Wappo\LaravelSchemaApi\Support\ValidatingResourceResolver::class,
+            \Wappo\LaravelSchemaApi\Support\CachingResourceResolver::class,
         ],
     ],
 ];
