@@ -6,5 +6,11 @@ namespace Wappo\LaravelSchemaApi\Contracts;
 
 interface ModelResolverInterface
 {
+    /**
+     * Get an Eloquent model class from a table name.
+     *
+     * @param  string $table
+     * @return class-string<\Illuminate\Database\Eloquent\Model>|null
+     */
     public function get(string $table): ?string;
 }
