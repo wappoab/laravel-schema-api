@@ -7,6 +7,7 @@ namespace Wappo\LaravelSchemaApi\Tests\Fakes\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Wappo\LaravelSchemaApi\Concerns\HasDateFormat;
@@ -41,5 +42,10 @@ class Post extends Model
     {
         return $this->belongsToMany(Category::class)
             ->using(CategoryPost::class);
+    }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
     }
 }
