@@ -132,6 +132,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('launch_code');
             $table->string('nuke_payload');
+            $table->boolean('is_armed')->default(false);
             $table->timestamps();
         });
     }
