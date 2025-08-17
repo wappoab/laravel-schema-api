@@ -46,7 +46,7 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
-        config()->set('schema-api.resolvers.namespace.name', 'Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models');
+        config()->set('schema-api.model_resolvers.namespace.name', 'Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models');
 
         $this->base = __DIR__ . '/tmp';
         File::ensureDirectoryExists($this->base);
