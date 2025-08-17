@@ -11,7 +11,8 @@ class SchemaApiIndexRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gzip' => ['nullable', 'numeric', 'min:0', 'max:9'],
+            'gzip' => ['nullable', 'integer', 'min:0', 'max:9'],
+            'since' => ['sometimes', 'date'],
         ];
     }
 }

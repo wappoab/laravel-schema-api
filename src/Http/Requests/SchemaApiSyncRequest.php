@@ -11,10 +11,12 @@ class SchemaApiSyncRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'operations' => 'required|array',
-            'operations.*.name' =>'required|string',
-            'operations.*.operation' =>'required|in:I,U,R',
-            'operations.*.obj' =>'required|array',
+            'gzip' => ['nullable', 'numeric', 'min:0', 'max:9'],
+            '*' => 'required|array',
+            '*.id' =>'required|string',
+            '*.type' =>'required|string',
+            '*.op' =>'required|in:C,U,D',
+            '*.attr' =>'sometimes|array',
         ];
     }
 }

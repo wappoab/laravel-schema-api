@@ -4,35 +4,71 @@ declare(strict_types=1);
 
 namespace Wappo\LaravelSchemaApi\Http\Controllers;
 
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Facades\ValidationRulesResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
-use Wappo\LaravelSchemaApi\Http\Resources\ModelOperationResource;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
+
+use function Laravel\Prompts\table;
 
 class SchemaApiSyncController
 {
     public function __invoke(SchemaApiSyncRequest $request)
     {
-        $modelOperations = $this->buildModelOperations($request->validated('operations'));
+        try {
+            $modelOperations = $this->buildModelOperations($request->validated());
+        }
+        catch (\ValueError $e) {
+            throw new BadRequestHttpException($e->getMessage(), $e);
+        }
         $this->authorizeModelOperations($modelOperations);
-
         $validationErrors = $this->validateModelsOperations($modelOperations);
         if ($validationErrors->isNotEmpty()) {
             return response()->json($validationErrors, 422);
         }
-
         $this->persistModelOperations($modelOperations);
-        $output = $this->renderModelOperations($modelOperations);
 
-        return response()->json($output);
+        $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
+        $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
+        $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
+        return response()->stream(function () use ($modelOperations, $flags, $gzipLevel) {
+            $stream = fopen('php://output', 'wb');
+            if ($gzipLevel > 0) {
+                stream_filter_append(
+                    $stream,
+                    'zlib.deflate',
+                    STREAM_FILTER_WRITE,
+                    ['window' => 31, 'level' => $gzipLevel],
+                );
+            }
+
+            $modelOperations->each(function (ModelOperation $modelOperation) use ($stream, $flags) {
+                if ($resource = ResourceResolver::get($modelOperation->modelClass)) {
+                    $attr = $resource::make($modelOperation->modelInstance);
+                } else {
+                    $attr = $modelOperation->modelInstance;
+                }
+
+                $item = [
+                    'id' => $modelOperation->id,
+                    'type' => $modelOperation->collectionName,
+                    'op' => $modelOperation->operation->value,
+                    'attr' => $attr,
+                ];
+                fwrite($stream, json_encode($item, $flags) . PHP_EOL);
+            });
+            fclose($stream);
+        }, 200, [
+            ...$gzipHeader,
+            'Content-Type' => 'application/stream+json',
+        ]);
     }
 
     private function buildModelOperations(array $operations): Collection
@@ -40,38 +76,38 @@ class SchemaApiSyncController
         $modelClasses = [];
         return collect($operations)
             ->map(function (array $op) {
-                $op['operation'] = Operation::from($op['operation']);
+                $op['op'] = Operation::from($op['op']); //throws ValueError that is handled
 
                 return $op;
             })
-            ->groupBy(fn($op) => $op['name'] . ':' . $op['obj']['id'])
+            ->groupBy(fn($op) => $op['type'] . ':' . $op['id'])
             ->filter(
-                fn(Collection $ops) => !($ops->first()['operation'] === Operation::create
-                    && $ops->last()['operation'] === Operation::delete)
+                fn(Collection $ops) => !($ops->first()['op'] === Operation::create
+                    && $ops->last()['op'] === Operation::delete)
             )->map(function (Collection $ops) use (&$modelClasses) {
                 return $ops->reduce(function (ModelOperation $carry, array $op) use (&$modelClasses) {
-                    $props = collect($op['obj'])->except('id', '$loki', 'meta')->toArray();
+                    $props = collect(($op['attr']??[]))->except('id')->toArray();
                     $carry->attributes = $props + $carry->attributes;
                     if (!$carry->modelClass) {
-                        $carry->modelClass = $modelClasses[$op['name']] ??= ModelResolver::get($op['name']);
-                        $carry->collectionName = $op['name'];
-                        if (!$modelClasses[$op['name']]) {
-                            throw new ModelNotFoundException(
+                        $carry->modelClass = $modelClasses[$op['type']] ??= ModelResolver::get($op['type']);
+                        $carry->collectionName = $op['type'];
+                        if (!$modelClasses[$op['type']]) {
+                            throw new BadRequestHttpException(
                                 sprintf(
-                                    'Model class for %s was not found',
+                                    'Model class for %s dont exist',
                                     $carry->collectionName,
                                 ),
                             );
                         }
                     }
                     if (!$carry->id) {
-                        $carry->id = $op['obj']['id'];
+                        $carry->id = $op['id'];
                     }
-                    if ($op['operation'] === Operation::delete) {
+                    if ($op['op'] === Operation::delete) {
                         $carry->attributes = [];
                     }
-                    if ($op['operation'] === Operation::delete || $op['operation'] === Operation::create || !$carry->operation) {
-                        $carry->operation = $op['operation'];
+                    if ($op['op'] === Operation::delete || $op['op'] === Operation::create || !$carry->operation) {
+                        $carry->operation = $op['op'];
                     }
 
                     return $carry;
@@ -79,7 +115,10 @@ class SchemaApiSyncController
             })->values()->each(function (ModelOperation $modelOperation) {
                 if ($modelOperation->operation === Operation::create) {
                     $modelOperation->modelInstance = app($modelOperation->modelClass);
-                    $modelOperation->modelInstance->id = $modelOperation->id;
+                    $modelOperation->modelInstance->setAttribute(
+                        $modelOperation->modelInstance->getKeyName(),
+                        $modelOperation->id
+                    );
 
                     return;
                 }
@@ -105,8 +144,8 @@ class SchemaApiSyncController
             $validator = Validator::make($modelOperation->attributes, $rules);
             if ($validator->fails()) {
                 return [
-                    '@id' => $modelOperation->id,
-                    'name' => $modelOperation->collectionName,
+                    'id' => $modelOperation->id,
+                    'type' => $modelOperation->collectionName,
                     'errors' => $validator->errors()->messages(),
                 ];
             }
@@ -122,18 +161,5 @@ class SchemaApiSyncController
                 : null,
             Operation::delete => $op->modelInstance->delete(),
         }));
-    }
-
-    private function renderModelOperations(Collection $modelOperations): array
-    {
-        $resourceClasses = [];
-
-        return ModelOperationResource::collection(
-            $modelOperations
-                ->each(function (ModelOperation $modelOperation) use (&$resourceClasses) {
-                    $modelOperation->resourceClass = $resourceClasses[$modelOperation->modelClass]
-                        ??= ResourceResolver::get($modelOperation->modelClass);
-                })
-        )->resolve();
     }
 }

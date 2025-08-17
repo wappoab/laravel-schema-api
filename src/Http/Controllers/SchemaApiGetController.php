@@ -6,8 +6,10 @@ namespace Wappo\LaravelSchemaApi\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
-use Wappo\LaravelSchemaApi\Support\ModelResourceResolver;
+use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
+use Wappo\LaravelSchemaApi\ResourceResolvers\UseSchemaApiJsonResourceAttributeResolver;
 
 class SchemaApiGetController
 {
@@ -18,6 +20,16 @@ class SchemaApiGetController
             throw new ModelNotFoundException(
                 sprintf(
                     'Model class for %s was not found',
+                    $table,
+                ),
+            );
+        }
+
+        $ref = new \ReflectionClass($modelClass);
+        if($ref->getAttributes(ApiIgnore::class)) {
+            throw new ModelNotFoundException(
+                sprintf(
+                    'Table %s is unlisted',
                     $table,
                 ),
             );
@@ -34,14 +46,11 @@ class SchemaApiGetController
 
         $item = $modelClass::findOrFail($id);
 
-        $modelResourceClass = app(ModelResourceResolver::class)->get($modelClass);
-        if($modelResourceClass)  {
-            $printer = fn ($model) => $modelResourceClass::make($model)->resolve();
-        }
-        else {
-            $printer = fn ($model) => $model;
+        $modelResourceClass = ResourceResolver::get($modelClass);
+        if ($modelResourceClass) {
+            $item = $modelResourceClass::make($item);
         }
 
-        return response()->json($printer($item));
+        return response()->json($item);
     }
 }
