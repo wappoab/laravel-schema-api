@@ -7,12 +7,12 @@ namespace Wappo\LaravelSchemaApi\Attributes;
 use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-class UseModelResource
+class UseSchemaApiJsonResource
 {
     /**
-     * @param class-string<\Illuminate\Http\Resources\Json\JsonResource> $modelResourceClass
+     * @param class-string<\Wappo\LaravelSchemaApi\Contracts\SchemaApiJsonResource> $resourceClass
      */
     public function __construct(
-        public string $modelResourceClass,
+        public string $resourceClass,
     ) {}
 }
