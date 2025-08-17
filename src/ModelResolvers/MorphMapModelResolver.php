@@ -7,7 +7,7 @@ namespace Wappo\LaravelSchemaApi\ModelResolvers;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 
-class MorphMapModelResolver implements ModelResolverInterface
+final readonly class MorphMapModelResolver implements ModelResolverInterface
 {
     public function get(string $table): ?string
     {
