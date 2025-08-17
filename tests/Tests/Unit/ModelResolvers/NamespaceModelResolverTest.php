@@ -6,7 +6,8 @@ use Wappo\LaravelSchemaApi\ModelResolvers\NamespaceModelResolver;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
 
 beforeEach(function () {
-    $this->resolver = new NamespaceModelResolver();
+    $namespace = config('schema-api.model_resolver.drivers.namespace.namespace');
+    $this->resolver = new NamespaceModelResolver($namespace);
 });
 
 it('resolves formats table name into model class with namespace', function () {
