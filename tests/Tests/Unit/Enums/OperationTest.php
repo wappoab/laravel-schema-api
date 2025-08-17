@@ -8,7 +8,7 @@ it('has a working operation enum', function () {
     expect(Operation::create)
         ->toBeInstanceOf(Operation::class)
         ->name->toBe('create')
-        ->value->toBe('I')
+        ->value->toBe('C')
         ->and(Operation::update)
         ->toBeInstanceOf(Operation::class)
         ->name->toBe('update')
@@ -16,11 +16,11 @@ it('has a working operation enum', function () {
         ->and(Operation::delete)
         ->toBeInstanceOf(Operation::class)
         ->name->toBe('delete')
-        ->value->toBe('R');
+        ->value->toBe('D');
 });
 
 it('can be created from strings', function () {
-    expect(Operation::from('I'))->toBe(Operation::create)
+    expect(Operation::from('C'))->toBe(Operation::create)
         ->and(Operation::from('U'))->toBe(Operation::update)
-        ->and(Operation::from('R'))->toBe(Operation::delete);
+        ->and(Operation::from('D'))->toBe(Operation::delete);
 });
