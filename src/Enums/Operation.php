@@ -4,7 +4,7 @@ namespace Wappo\LaravelSchemaApi\Enums;
 
 enum Operation : string
 {
-    case create = "I";
+    case create = "C";
     case update = "U";
-    case delete = "R";
+    case delete = "D";
 }
