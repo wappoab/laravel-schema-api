@@ -39,18 +39,16 @@ class SchemaValidationRulesGenerator
         $rules = [];
         foreach ($columns as $column) {
             $name = $column['name'];
-            $type = $column['type_name'];
 
             $ruleSet = ($this->columnRuleMapper)($column, $casts);
 
             if ($operation === Operation::create && empty($column['nullable']) && $name !== $primaryKey) {
                 array_unshift($ruleSet, 'required');
             } else {
+                if(!empty($column['nullable'])) {
+                    array_unshift($ruleSet, 'nullable');
+                }
                 array_unshift($ruleSet, 'sometimes');
-            }
-
-            if (in_array('string', $ruleSet, true) && preg_match('/\\((\\d+)\\)/', $type, $m)) {
-                $ruleSet[] = 'max:' . (int) $m[1];
             }
 
             $rules[$name] = implode('|', $ruleSet);
