@@ -6,13 +6,11 @@ namespace Wappo\LaravelSchemaApi\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Schema;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiGetRequest;
-use Wappo\LaravelSchemaApi\ResourceResolvers\UseSchemaApiJsonResourceAttributeResolver;
 
 class SchemaApiGetController
 {

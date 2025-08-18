@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Wappo\LaravelSchemaApi\Tests\Fakes\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Wappo\LaravelSchemaApi\Tests\Factories\SecretFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Concerns\HasDateFormat;
+use Wappo\LaravelSchemaApi\Tests\Factories\SecretFactory;
 
 /**
  *

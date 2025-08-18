@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wappo\LaravelSchemaApi\Support;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Wappo\LaravelSchemaApi\Enums\Operation;

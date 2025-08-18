@@ -16,8 +16,6 @@ use Wappo\LaravelSchemaApi\Facades\ValidationRulesResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
 
-use function Laravel\Prompts\table;
-
 class SchemaApiSyncController
 {
     public function __invoke(SchemaApiSyncRequest $request)

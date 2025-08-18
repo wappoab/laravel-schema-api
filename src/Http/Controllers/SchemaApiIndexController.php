@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Attributes\ApplyQueryModifier;
-use Wappo\LaravelSchemaApi\Attributes\UseSchemaApiJsonResource;
 use Wappo\LaravelSchemaApi\Contracts\QueryModifierInterface;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
