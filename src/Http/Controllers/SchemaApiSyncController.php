@@ -48,10 +48,12 @@ class SchemaApiSyncController
             }
 
             $modelOperations->each(function (ModelOperation $modelOperation) use ($stream, $flags) {
-                if ($resource = ResourceResolver::get($modelOperation->modelClass)) {
-                    $attr = $resource::make($modelOperation->modelInstance);
-                } else {
-                    $attr = $modelOperation->modelInstance;
+                $attr = [];
+                if($modelOperation->operation !== Operation::delete) {
+                    $attr = $modelOperation->modelClass::whereKey($modelOperation->id)->toBase()->first();
+                    if ($resource = ResourceResolver::get($modelOperation->modelClass)) {
+                        $attr = $resource::make($attr);
+                    }
                 }
 
                 $item = [
@@ -155,7 +157,7 @@ class SchemaApiSyncController
     {
         DB::transaction(fn() => $modelOperations->each(fn(ModelOperation $op) => match($op->operation) {
             Operation::create, Operation::update => $op->modelInstance->fill($op->attributes)->isDirty()
-                ? tap($op->modelInstance)->save()->refresh()
+                ? $op->modelInstance->save()
                 : null,
             Operation::delete => $op->modelInstance->delete(),
         }));
