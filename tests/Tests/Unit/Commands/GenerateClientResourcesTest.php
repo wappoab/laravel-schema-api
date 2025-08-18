@@ -46,7 +46,7 @@ it('generates all the client files into our tmp folder', function () {
             $this->getFixture(__DIR__ . '/Fixtures/components.ts'),
         );
 
-    foreach (['categories', 'category_post', 'posts', 'secrets', 'users'] as $typeName) {
+    foreach (['categories', 'category_posts', 'posts', 'secrets', 'users'] as $typeName) {
         // $this->setFixture(__DIR__ . '/Fixtures/stores/collections/'.$typeName.'.ts', (string)File::get($this->base . '/frontend/stores/collections/'.$typeName.'.ts'));
         expect(File::exists($this->base . '/frontend/stores/collections/'.$typeName.'.ts'))->toBeTrue()
             ->and(File::get($this->base . '/frontend/stores/collections/'.$typeName.'.ts'))->toEqual(

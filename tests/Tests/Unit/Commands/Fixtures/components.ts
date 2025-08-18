@@ -11,7 +11,7 @@ export function registerFormComponents(app: AppType): void {
     app.component("categories", CategoryForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\Category", CategoryForm);
     app.component("CategoryPostForm", CategoryPostForm);
-    app.component("category_post", CategoryPostForm);
+    app.component("category_posts", CategoryPostForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\CategoryPost", CategoryPostForm);
     app.component("PostForm", PostForm);
     app.component("posts", PostForm);

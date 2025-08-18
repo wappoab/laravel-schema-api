@@ -4,7 +4,7 @@ import { type CollectionNameEnum, CollectionName } from "@/enums/CollectionName.
 import type { CollectionDocumentBase } from "sylviejs/database/collection/collection-document-base";
 
 import { useCategoryStore } from "@/stores/collections/categories.ts";
-import { useCategoryPostStore } from "@/stores/collections/category_post.ts";
+import { useCategoryPostStore } from "@/stores/collections/category_posts.ts";
 import { usePostStore } from "@/stores/collections/posts.ts";
 import { useSecretStore } from "@/stores/collections/secrets.ts";
 import { useUserStore } from "@/stores/collections/users.ts";
@@ -18,7 +18,7 @@ import { type User } from "@/models";
 /*
 export interface CollectionStoreMap {
     categories: ReturnType<typeof useCategoryStore>;
-    category_post: ReturnType<typeof useCategoryPostStore>;
+    category_posts: ReturnType<typeof useCategoryPostStore>;
     posts: ReturnType<typeof usePostStore>;
     secrets: ReturnType<typeof useSecretStore>;
     users: ReturnType<typeof useUserStore>;
@@ -31,7 +31,7 @@ export interface ModelMap {
         model: Category,
         document: Category & CollectionDocumentBase,
     }
-    category_post: {
+    category_posts: {
         store: ReturnType<typeof useCategoryPostStore>,
         model: CategoryPost,
         document: CategoryPost & CollectionDocumentBase,
@@ -62,7 +62,7 @@ export const useCollectionStore = defineStore("collections", () => {
 
     const storeMap: Record<keyof ModelMap, any> = {
             categories: categoryStore,
-            category_post: categoryPostStore,
+            category_posts: categoryPostStore,
             posts: postStore,
             secrets: secretStore,
             users: userStore,

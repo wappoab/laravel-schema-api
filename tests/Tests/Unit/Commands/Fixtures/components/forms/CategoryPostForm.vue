@@ -7,7 +7,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <ModelForm :id="props.id" collection="category_post" v-slot="{ data }">
+    <ModelForm :id="props.id" collection="category_posts" v-slot="{ data }">
 
     </ModelForm>
 </template>

@@ -113,7 +113,8 @@ return new class extends Migration
             $table->softDeletesTz();
         });
 
-        Schema::create('category_post', function (Blueprint $table) {
+        Schema::create('category_posts', function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->foreignUuid('category_id')
                 ->references('id')
                 ->on('categories')
@@ -125,7 +126,7 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
-            $table->primary(['category_id', 'post_id']);
+            $table->unique(['category_id', 'post_id']);
         });
 
         Schema::create('secrets', function (Blueprint $table) {

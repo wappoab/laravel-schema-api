@@ -1,6 +1,6 @@
 export enum CollectionName {
     Category = "categories",
-    CategoryPost = "category_post",
+    CategoryPost = "category_posts",
     Post = "posts",
     Secret = "secrets",
     User = "users",
