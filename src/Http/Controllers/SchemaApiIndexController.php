@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use ReflectionClass;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Attributes\ApplyQueryModifier;
@@ -25,11 +26,13 @@ class SchemaApiIndexController
      */
     public function __invoke(SchemaApiIndexRequest $request, ?string $table = null)
     {
-        $flags      = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
-        $gzipLevel  = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
+        $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
+        $tableToTypeMacro = (int) config('schema-api.macros.type_to_table', 'snake');
+        $tableToType = Str::hasMacro($tableToTypeMacro) ? fn($tbl) => Str::{$tableToTypeMacro}($tbl) : fn($tbl) => $tbl;
+        $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
         $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
 
-        $tables = $table ? [$table] : array_map(fn ($tbl) => $tbl['name'], Schema::getTables());
+        $tables = $table ? [$table] : array_map(fn ($tbl) => $tableToType($tbl['name']), Schema::getTables());
 
         return response()->stream(function () use ($tables, $request, $flags, $gzipLevel) {
             $stream = fopen('php://output', 'wb');

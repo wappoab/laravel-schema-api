@@ -79,4 +79,8 @@ return [
             \Wappo\LaravelSchemaApi\Support\CachingResourceResolver::class,
         ],
     ],
+
+    'macros' => [
+        'type_to_table' => env('SCHEMA_API_NAMING_TYPE_TO_TABLE_MACRO', 'slug'),
+    ],
 ];
