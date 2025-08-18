@@ -42,10 +42,11 @@ class SchemaValidationRulesGenerator
 
             $ruleSet = ($this->columnRuleMapper)($column, $casts);
 
-            if ($operation === Operation::create && empty($column['nullable']) && $name !== $primaryKey) {
+            $nullable = (bool)($column['nullable'] ?? false);
+            if ($operation === Operation::create && !$nullable && $name !== $primaryKey) {
                 array_unshift($ruleSet, 'required');
             } else {
-                if(!empty($column['nullable'])) {
+                if($nullable) {
                     array_unshift($ruleSet, 'nullable');
                 }
                 array_unshift($ruleSet, 'sometimes');
