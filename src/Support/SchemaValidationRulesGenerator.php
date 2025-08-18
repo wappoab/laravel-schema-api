@@ -10,6 +10,10 @@ use Wappo\LaravelSchemaApi\Enums\Operation;
 
 class SchemaValidationRulesGenerator
 {
+    public function __construct(private ColumnRuleMapper $columnRuleMapper)
+    {
+    }
+
     public function generate(string $modelClass, Operation $operation): array
     {
         if (!is_subclass_of($modelClass, Model::class)) {
@@ -20,6 +24,7 @@ class SchemaValidationRulesGenerator
         $fillable = $model->getFillable();
         $guarded = $model->getGuarded();
         $primaryKey = $model->getKeyName();
+        $casts = $model->getCasts();
 
         $columns = collect(Schema::getColumns($table))
             ->filter(function (array $col) use ($fillable, $guarded) {
@@ -36,15 +41,7 @@ class SchemaValidationRulesGenerator
             $name = $column['name'];
             $type = $column['type_name'];
 
-            $ruleSet = match ($type) {
-                'uuid' => ['uuid'],
-                'jsonb' => ['array'],
-                'boolean' => ['boolean'],
-                'integer', 'bigint', 'smallint' => ['integer'],
-                'float', 'double', 'decimal' => ['numeric'],
-                'date', 'datetime', 'timestamp', 'timestamptz' => ['date'],
-                default => ['string'],
-            };
+            $ruleSet = ($this->columnRuleMapper)($column, $casts);
 
             if ($operation === Operation::create && empty($column['nullable']) && $name !== $primaryKey) {
                 array_unshift($ruleSet, 'required');

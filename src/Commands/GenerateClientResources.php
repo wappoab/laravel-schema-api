@@ -177,11 +177,11 @@ class GenerateClientResources extends Command
 
     protected function databaseColumnTypeToTypescriptType(string $type, string $type_name, ?string $cast): string
     {
-        if ($cast === 'string' || $type_name === 'uuid' || $type_name === 'varchar' || $type_name === 'text') {
+        if ($type_name === 'blob' || $cast === 'string' || $type_name === 'uuid' || $type_name === 'varchar' || $type_name === 'text') {
             return 'string';
         }
 
-        if ($type_name === 'timestamp' || $type_name === 'timestamptz' || $type_name === 'datetime' || $type_name === 'datetimetz') {
+        if ($type_name === 'time' || $type_name === 'date' || $type_name === 'timestamp' || $type_name === 'timestamptz' || $type_name === 'datetime' || $type_name === 'datetimetz') {
             return 'Date';
         }
 
@@ -193,7 +193,7 @@ class GenerateClientResources extends Command
             return 'boolean';
         }
 
-        if ($type_name === 'tinyint' || $type === 'integer') {
+        if ($type_name === 'double' || $type_name === 'float' || $type_name === 'numeric' || $type_name === 'tinyint' || $type === 'integer') {
             return 'number';
         }
 

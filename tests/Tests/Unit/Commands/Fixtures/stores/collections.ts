@@ -5,12 +5,14 @@ import type { CollectionDocumentBase } from "sylviejs/database/collection/collec
 
 import { useCategoryStore } from "@/stores/collections/categories.ts";
 import { useCategoryPostStore } from "@/stores/collections/category_posts.ts";
+import { useDataTypeStore } from "@/stores/collections/data_types.ts";
 import { usePostStore } from "@/stores/collections/posts.ts";
 import { useSecretStore } from "@/stores/collections/secrets.ts";
 import { useUserStore } from "@/stores/collections/users.ts";
 
 import { type Category } from "@/models";
 import { type CategoryPost } from "@/models";
+import { type DataType } from "@/models";
 import { type Post } from "@/models";
 import { type Secret } from "@/models";
 import { type User } from "@/models";
@@ -19,6 +21,7 @@ import { type User } from "@/models";
 export interface CollectionStoreMap {
     categories: ReturnType<typeof useCategoryStore>;
     category_posts: ReturnType<typeof useCategoryPostStore>;
+    data_types: ReturnType<typeof useDataTypeStore>;
     posts: ReturnType<typeof usePostStore>;
     secrets: ReturnType<typeof useSecretStore>;
     users: ReturnType<typeof useUserStore>;
@@ -35,6 +38,11 @@ export interface ModelMap {
         store: ReturnType<typeof useCategoryPostStore>,
         model: CategoryPost,
         document: CategoryPost & CollectionDocumentBase,
+    }
+    data_types: {
+        store: ReturnType<typeof useDataTypeStore>,
+        model: DataType,
+        document: DataType & CollectionDocumentBase,
     }
     posts: {
         store: ReturnType<typeof usePostStore>,
@@ -56,6 +64,7 @@ export interface ModelMap {
 export const useCollectionStore = defineStore("collections", () => {
     const categoryStore = useCategoryStore();
     const categoryPostStore = useCategoryPostStore();
+    const dataTypeStore = useDataTypeStore();
     const postStore = usePostStore();
     const secretStore = useSecretStore();
     const userStore = useUserStore();
@@ -63,6 +72,7 @@ export const useCollectionStore = defineStore("collections", () => {
     const storeMap: Record<keyof ModelMap, any> = {
             categories: categoryStore,
             category_posts: categoryPostStore,
+            data_types: dataTypeStore,
             posts: postStore,
             secrets: secretStore,
             users: userStore,
@@ -76,6 +86,7 @@ export const useCollectionStore = defineStore("collections", () => {
         let changes = 0;
         changes += categoryStore.changesCount;
         changes += categoryPostStore.changesCount;
+        changes += dataTypeStore.changesCount;
         changes += postStore.changesCount;
         changes += secretStore.changesCount;
         changes += userStore.changesCount;
@@ -85,6 +96,7 @@ export const useCollectionStore = defineStore("collections", () => {
     const flushChanges = () => {
         categoryStore.flushChanges();
         categoryPostStore.flushChanges();
+        dataTypeStore.flushChanges();
         postStore.flushChanges();
         secretStore.flushChanges();
         userStore.flushChanges();
@@ -93,6 +105,7 @@ export const useCollectionStore = defineStore("collections", () => {
     const loadRecordsIfNeeded = () => {
             categoryStore.loadRecordsIfNeeded();
             categoryPostStore.loadRecordsIfNeeded();
+            dataTypeStore.loadRecordsIfNeeded();
             postStore.loadRecordsIfNeeded();
             secretStore.loadRecordsIfNeeded();
             userStore.loadRecordsIfNeeded();

@@ -2,6 +2,7 @@ import { type App as AppType } from 'vue';
 
 import CategoryForm from "@/components/forms/CategoryForm.vue";
 import CategoryPostForm from "@/components/forms/CategoryPostForm.vue";
+import DataTypeForm from "@/components/forms/DataTypeForm.vue";
 import PostForm from "@/components/forms/PostForm.vue";
 import SecretForm from "@/components/forms/SecretForm.vue";
 import UserForm from "@/components/forms/UserForm.vue";
@@ -13,6 +14,9 @@ export function registerFormComponents(app: AppType): void {
     app.component("CategoryPostForm", CategoryPostForm);
     app.component("category_posts", CategoryPostForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\CategoryPost", CategoryPostForm);
+    app.component("DataTypeForm", DataTypeForm);
+    app.component("data_types", DataTypeForm);
+    app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\DataType", DataTypeForm);
     app.component("PostForm", PostForm);
     app.component("posts", PostForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\Post", PostForm);

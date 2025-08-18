@@ -136,6 +136,96 @@ return new class extends Migration
             $table->boolean('is_armed')->default(false);
             $table->timestamps();
         });
+
+        Schema::create('data_types', function (Blueprint $table) {
+            $driver = Schema::getConnection()->getDriverName();
+
+            // PK you already had
+            $table->uuid('id')->primary();
+            $table->string('string'); // existing
+
+            // Strings
+            $table->char('char_col', 36);
+            $table->string('string_100', 100);
+            $table->text('text_col');
+            $table->mediumText('medium_text_col');
+            $table->longText('long_text_col');
+
+            // Numbers
+            $table->tinyInteger('tiny_integer_col');
+            $table->unsignedTinyInteger('unsigned_tiny_integer_col');
+            $table->smallInteger('small_integer_col');
+            $table->unsignedSmallInteger('unsigned_small_integer_col');
+            $table->mediumInteger('medium_integer_col');
+            $table->unsignedMediumInteger('unsigned_medium_integer_col');
+            $table->integer('integer_col');
+            $table->unsignedInteger('unsigned_integer_col');
+            $table->bigInteger('big_integer_col');
+            $table->unsignedBigInteger('unsigned_big_integer_col');
+            $table->decimal('decimal_col', 8, 2);
+            $table->float('float_col', 8, 2);
+            $table->double('double_col', 15, 8);
+            $table->boolean('boolean_col');
+
+            // Date & time
+            $table->date('date_col');
+            $table->time('time_col');
+            $table->timeTz('time_tz_col')->nullable();
+            $table->dateTime('datetime_col');
+            $table->dateTimeTz('datetime_tz_col')->nullable();
+            $table->timestamp('timestamp_col')->nullable();
+            $table->timestampTz('timestamp_tz_col')->nullable();
+
+            // JSON
+            $table->json('json_col');
+            if ($driver === 'pgsql') {
+                $table->jsonb('jsonb_col');
+            }
+
+            // Network & IDs
+            $table->ipAddress('ip_address_col');
+            $table->macAddress('mac_address_col');
+            $table->uuid('uuid_col');
+            $table->ulid('ulid_col');
+
+            // Binary
+            $table->binary('binary_col');
+
+            // Enum / Set / Year (DB-specific bits)
+            $table->enum('enum_col', ['draft', 'published', 'archived'])->nullable();
+            if ($driver === 'mysql') {
+                $table->set('set_col', ['red','green','blue'])->nullable();
+                $table->year('year_col')->nullable();
+            } else {
+                // Reasonable cross-DB fallback
+                $table->unsignedSmallInteger('year_col')->nullable();
+            }
+
+            // Geometry (MySQL & Postgres w/ PostGIS)
+            if (in_array($driver, ['mysql', 'pgsql'], true)) {
+                $table->geometry('geom_col')->nullable();
+                $table->point('point_col')->nullable();
+                $table->lineString('line_string_col')->nullable();
+                $table->polygon('polygon_col')->nullable();
+                $table->geometryCollection('geometry_collection_col')->nullable();
+                $table->multiPoint('multi_point_col')->nullable();
+                $table->multiLineString('multi_line_string_col')->nullable();
+                $table->multiPolygon('multi_polygon_col')->nullable();
+            }
+
+            // Morphs
+            $table->morphs('morphable');
+            $table->nullableMorphs('nullable_morphable');
+            $table->uuidMorphs('uuid_morphable');
+            $table->ulidMorphs('ulid_morphable');
+
+            // Foreign IDs (no FK constraints here to keep it standalone)
+            $table->foreignId('user_id')->nullable();
+            $table->foreignUuid('team_uuid')->nullable();
+            $table->foreignUlid('project_ulid')->nullable();
+
+            $table->timestamps();
+        });
     }
 
     /**
@@ -156,5 +246,6 @@ return new class extends Migration
         Schema::dropIfExists('categories');
         Schema::dropIfExists('category_post');
         Schema::dropIfExists('secrets');
+        Schema::dropIfExists('data_types');
     }
 };
