@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
-use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Category;
+use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Secret;
 
@@ -42,15 +42,12 @@ it('can list all data from one table', closure: function () {
 it('can list all data', closure: function () {
     Carbon::setTestNow('2025-01-01 00:00:00');
     $expectedJson = $this->getFixture(__DIR__ . '/Fixtures/index-all.json');
-    foreach ($expectedJson as $postData) {
-        switch ($postData['type']) {
-            case 'posts':
-                Post::factory()->create(['id' => $postData['id'], ...$postData['attr']]);
-                break;
-            case 'categories':
-                Category::factory()->create(['id' => $postData['id'], ...$postData['attr']]);
-                break;
+    foreach ($expectedJson as $rowData) {
+        $model = ModelResolver::get($rowData['type']);
+        if(!$model) {
+            continue;
         }
+        $model::factory()->create(['id' => $rowData['id'], ...$rowData['attr']]);
     }
 
     $endpoint = route('schema-api.index');
@@ -61,7 +58,7 @@ it('can list all data', closure: function () {
 
     $responseJson = $response->streamedJson();
 
-    expect($responseJson)->toMatchArray($expectedJson);
+    expect($responseJson->toArray())->toEqualCanonicalizing($expectedJson);
 });
 
 it('lists all data except hidden models', closure: function () {
