@@ -82,3 +82,25 @@ it('lists all data except hidden models', closure: function () {
         ->toHaveCount(count($expectedJson))
         ->toMatchArray($expectedJson);
 });
+
+it('can list all data since a date', closure: function () {
+    Carbon::setTestNow('2025-01-01 00:00:00');
+
+    Post::factory()->count(3)->create();
+
+    Carbon::setTestNow('2025-01-03 00:00:00');
+
+    Post::factory()->count(3)->create();
+
+    $endpoint = route('schema-api.index', [
+        'since' => '2025-01-03 00:00:00',
+    ]);
+    $response = $this->getJson($endpoint);
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/stream+json');
+
+    $responseJson = $response->streamedJson();
+
+    expect($responseJson)->toHaveCount(3);
+});
