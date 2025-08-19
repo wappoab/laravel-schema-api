@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Carbon\Carbon;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Enums\PostStatus;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Secret;
 
@@ -86,21 +87,73 @@ it('lists all data except hidden models', closure: function () {
 it('can list all data since a date', closure: function () {
     Carbon::setTestNow('2025-01-01 00:00:00');
 
-    Post::factory()->count(3)->create();
+    $posts1 = Post::factory()->count(3)->create([
+        'title' => 'Batch 1',
+        'status' => PostStatus::DRAFT,
+    ]);
+
+    Carbon::setTestNow('2025-01-02 00:00:00');
+
+    $posts2 = Post::factory()->count(3)->create([
+        'title' => 'Batch 2',
+        'status' => PostStatus::DRAFT,
+    ]);
+
+    $endpoint = route('schema-api.index', [
+        'since' => '2025-01-02 00:00:00',
+    ]);
+    $response = $this->getJson($endpoint);
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/stream+json');
+    $responseJson = $response->streamedJson();
+
+    expect($responseJson)->toHaveCount(3)
+        ->each(function ($item) {
+            expect($item->value)
+                ->attr->title->toBe('Batch 2')
+                ->attr->status->toBe(PostStatus::DRAFT->name)
+                ->op->toBe('C')
+            ;
+        });
 
     Carbon::setTestNow('2025-01-03 00:00:00');
 
-    Post::factory()->count(3)->create();
+    $posts1->each->update(['status' => PostStatus::PUBLISHED]);
 
     $endpoint = route('schema-api.index', [
         'since' => '2025-01-03 00:00:00',
     ]);
     $response = $this->getJson($endpoint);
-
     $response->assertOk();
     $response->assertHeader('Content-Type', 'application/stream+json');
-
     $responseJson = $response->streamedJson();
 
-    expect($responseJson)->toHaveCount(3);
+    expect($responseJson)->toHaveCount(3)
+        ->each(function ($item) {
+            expect($item->value)
+                ->attr->title->toBe('Batch 1')
+                ->attr->status->toBe(PostStatus::PUBLISHED->name)
+                ->op->toBe('U')
+            ;
+        });
+
+    Carbon::setTestNow('2025-01-04 00:00:00');
+
+    $posts2->each->delete();
+
+    $endpoint = route('schema-api.index', [
+        'since' => '2025-01-04 00:00:00',
+    ]);
+    $response = $this->getJson($endpoint);
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/stream+json');
+    $responseJson = $response->streamedJson();
+
+    expect($responseJson)->toHaveCount(3)
+        ->each(function ($item) {
+            expect($item->value)
+                ->op->toBe('D')
+            ;
+        });
+
 });

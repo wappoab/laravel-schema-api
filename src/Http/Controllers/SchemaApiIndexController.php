@@ -85,9 +85,9 @@ class SchemaApiIndexController
 
                     $itemWrapper = function ($item) use ($deletedAtColumn, $createdAtColumn, $table, $pkName, $sinceTime, $resourceWrapper) {
                         $op = match (true) {
-                            $item->{$deletedAtColumn} => Operation::delete->value,
-                            Carbon::parse($item->{$createdAtColumn})->isAfter($sinceTime) => Operation::create->value,
-                            default => Operation::update->value,
+                            !is_null($item->{$deletedAtColumn}) => Operation::delete->value,
+                            Carbon::parse($item->{$createdAtColumn})->isBefore($sinceTime) => Operation::update->value,
+                            default => Operation::create->value,
                         };
 
                         return [
