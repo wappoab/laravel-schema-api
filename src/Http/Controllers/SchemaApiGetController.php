@@ -6,6 +6,7 @@ namespace Wappo\LaravelSchemaApi\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
@@ -50,13 +51,15 @@ class SchemaApiGetController
             )
         );
 
+        Gate::authorize('view', [$modelClass, $id]);
+
         $model = $modelClass::findOrFail($id);
 
         $modelResourceClass = ResourceResolver::get($modelClass);
         $item = $modelResourceClass ? $modelResourceClass::make($model) : $model;
 
-        $flags      = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
-        $gzipLevel  = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
+        $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
+        $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
         $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
 
         return response()->stream(function () use ($item, $model, $flags, $gzipLevel) {

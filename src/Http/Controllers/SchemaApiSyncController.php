@@ -21,7 +21,6 @@ use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 class SchemaApiSyncController
 {
     public function __construct(
-        private TableToTypeMapper $tableToTypeMapper,
         private readonly TypeToTableMapper $typeToTableMapper,
     )
     {

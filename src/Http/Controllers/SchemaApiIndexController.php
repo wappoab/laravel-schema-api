@@ -25,8 +25,8 @@ use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 class SchemaApiIndexController
 {
     public function __construct(
-        private TypeToTableMapper $typeToTableMapper,
-        private TableToTypeMapper $tableToTypeMapper,
+        private readonly TypeToTableMapper $typeToTableMapper,
+        private readonly TableToTypeMapper $tableToTypeMapper,
     ) {
     }
 
