@@ -17,7 +17,7 @@ use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
-readonly class SchemaApiSyncController
+final readonly class SchemaApiSyncController
 {
     public function __construct(
         private TypeToTableMapper $typeToTableMapper,

@@ -22,7 +22,7 @@ use Wappo\LaravelSchemaApi\Support\ModelOperation;
 use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
-readonly class SchemaApiIndexController
+final readonly class SchemaApiIndexController
 {
     public function __construct(
         private TypeToTableMapper $typeToTableMapper,
