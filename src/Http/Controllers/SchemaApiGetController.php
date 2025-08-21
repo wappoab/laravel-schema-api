@@ -14,9 +14,9 @@ use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiGetRequest;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
-class SchemaApiGetController
+readonly class SchemaApiGetController
 {
-    public function __construct(private readonly TypeToTableMapper $typeToTableMapper)
+    public function __construct(private TypeToTableMapper $typeToTableMapper)
     {
     }
 

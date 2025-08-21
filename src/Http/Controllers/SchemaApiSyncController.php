@@ -15,13 +15,12 @@ use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Facades\ValidationRulesResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
-use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
-class SchemaApiSyncController
+readonly class SchemaApiSyncController
 {
     public function __construct(
-        private readonly TypeToTableMapper $typeToTableMapper,
+        private TypeToTableMapper $typeToTableMapper,
     )
     {
     }
