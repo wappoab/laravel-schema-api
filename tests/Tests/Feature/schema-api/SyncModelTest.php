@@ -3,18 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Enums\PostStatus;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Category;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
-use Wappo\LaravelSchemaApi\Tests\Fakes\Models\User;
-
-beforeEach(function () {
-    $this->actingAs(User::factory()->create());
-    Gate::before(fn () => true);
-});
 
 it('can sync insert models', function () {
     $uuid = Str::uuid()->toString();

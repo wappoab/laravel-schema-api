@@ -13,8 +13,8 @@ final class CachingModelResolver implements ModelResolverInterface
     {
     }
 
-    public function get(string $table): ?string
+    public function get(string $type): ?string
     {
-        return $this->cache[$table] ??= $this->inner->get($table);
+        return $this->cache[$type] ??= $this->inner->get($type);
     }
 }

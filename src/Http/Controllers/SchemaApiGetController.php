@@ -11,17 +11,22 @@ use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiGetRequest;
+use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
 class SchemaApiGetController
 {
-    public function __invoke(string $table, mixed $id, SchemaApiGetRequest $request)
+    public function __construct(private readonly TypeToTableMapper $typeToTableMapper)
     {
-        $modelClass = ModelResolver::get($table);
+    }
+
+    public function __invoke(string $type, mixed $id, SchemaApiGetRequest $request)
+    {
+        $modelClass = ModelResolver::get(($this->typeToTableMapper)($type));
         if (!$modelClass) {
             throw new ModelNotFoundException(
                 sprintf(
                     'Model class for %s was not found',
-                    $table,
+                    $type,
                 ),
             );
         }
@@ -30,8 +35,8 @@ class SchemaApiGetController
         if($ref->getAttributes(ApiIgnore::class)) {
             throw new ModelNotFoundException(
                 sprintf(
-                    'Table %s is unlisted',
-                    $table,
+                    'Model %s is unlisted',
+                    $type,
                 ),
             );
         }

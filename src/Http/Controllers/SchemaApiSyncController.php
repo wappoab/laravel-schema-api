@@ -15,9 +15,18 @@ use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Facades\ValidationRulesResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
+use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
+use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
 class SchemaApiSyncController
 {
+    public function __construct(
+        private TableToTypeMapper $tableToTypeMapper,
+        private readonly TypeToTableMapper $typeToTableMapper,
+    )
+    {
+    }
+
     public function __invoke(SchemaApiSyncRequest $request)
     {
         try {
@@ -49,7 +58,7 @@ class SchemaApiSyncController
 
             $modelOperations->each(function (ModelOperation $modelOperation) use ($stream, $flags) {
                 $attr = [];
-                if($modelOperation->operation !== Operation::delete) {
+                if($modelOperation->op !== Operation::delete) {
                     $attr = $modelOperation->modelClass::whereKey($modelOperation->id)->toBase()->first();
                     if ($resource = ResourceResolver::get($modelOperation->modelClass)) {
                         $attr = $resource::make($attr);
@@ -58,8 +67,8 @@ class SchemaApiSyncController
 
                 $item = [
                     'id' => $modelOperation->id,
-                    'type' => $modelOperation->collectionName,
-                    'op' => $modelOperation->operation->value,
+                    'type' => $modelOperation->type,
+                    'op' => $modelOperation->op->value,
                     'attr' => $attr,
                 ];
                 fwrite($stream, json_encode($item, $flags) . PHP_EOL);
@@ -73,7 +82,6 @@ class SchemaApiSyncController
 
     private function buildModelOperations(array $operations): Collection
     {
-        $modelClasses = [];
         return collect($operations)
             ->map(function (array $op) {
                 $op['op'] = Operation::from($op['op']); //throws ValueError that is handled
@@ -84,37 +92,36 @@ class SchemaApiSyncController
             ->filter(
                 fn(Collection $ops) => !($ops->first()['op'] === Operation::create
                     && $ops->last()['op'] === Operation::delete)
-            )->map(function (Collection $ops) use (&$modelClasses) {
-                return $ops->reduce(function (ModelOperation $carry, array $op) use (&$modelClasses) {
+            )->map(function (Collection $ops) {
+                return $ops->reduce(function (ModelOperation $carry, array $op) {
                     $props = collect(($op['attr']??[]))->except('id')->toArray();
-                    $carry->attributes = $props + $carry->attributes;
+                    $carry->attr = $props + $carry->attr;
                     if (!$carry->modelClass) {
-                        $carry->modelClass = $modelClasses[$op['type']] ??= ModelResolver::get($op['type']);
-                        $carry->collectionName = $op['type'];
-                        if (!$modelClasses[$op['type']]) {
+                        $carry->modelClass = ModelResolver::get($op['type']);
+                        if (!$carry->modelClass) {
                             throw new BadRequestHttpException(
                                 sprintf(
                                     'Model class for %s dont exist',
-                                    $carry->collectionName,
+                                    $carry->tableName,
                                 ),
                             );
                         }
-                    }
-                    if (!$carry->id) {
+                        $carry->tableName = ($this->typeToTableMapper)($op['type']);
+                        $carry->type = $op['type'];
                         $carry->id = $op['id'];
                     }
                     if ($op['op'] === Operation::delete) {
-                        $carry->attributes = [];
+                        $carry->attr = [];
                     }
-                    if ($op['op'] === Operation::delete || $op['op'] === Operation::create || !$carry->operation) {
-                        $carry->operation = $op['op'];
+                    if ($op['op'] === Operation::delete || $op['op'] === Operation::create || !$carry->op) {
+                        $carry->op = $op['op'];
                     }
 
                     return $carry;
-                }, app(ModelOperation::class));
+                }, new ModelOperation);
             })->values()->each(function (ModelOperation $modelOperation) {
-                if ($modelOperation->operation === Operation::create) {
-                    $modelOperation->modelInstance = app($modelOperation->modelClass);
+                if ($modelOperation->op === Operation::create) {
+                    $modelOperation->modelInstance = new $modelOperation->modelClass;
                     $modelOperation->modelInstance->setAttribute(
                         $modelOperation->modelInstance->getKeyName(),
                         $modelOperation->id
@@ -129,8 +136,8 @@ class SchemaApiSyncController
     private function authorizeModelOperations(Collection $modelOperations): void
     {
         $modelOperations->each(fn(ModelOperation $modelOperation) => Gate::authorize(
-            $modelOperation->operation->name,
-            $modelOperation->operation === Operation::create
+            $modelOperation->op->name,
+            $modelOperation->op === Operation::create
                 ? $modelOperation->modelClass
                 : $modelOperation->modelInstance,
         )
@@ -140,12 +147,12 @@ class SchemaApiSyncController
     private function validateModelsOperations(Collection $modelOperations): Collection
     {
         return $modelOperations->map(function (ModelOperation $modelOperation) {
-            $rules = ValidationRulesResolver::get($modelOperation->modelClass, $modelOperation->operation);
-            $validator = Validator::make($modelOperation->attributes, $rules);
+            $rules = ValidationRulesResolver::get($modelOperation->modelClass, $modelOperation->op);
+            $validator = Validator::make($modelOperation->attr, $rules);
             if ($validator->fails()) {
                 return [
                     'id' => $modelOperation->id,
-                    'type' => $modelOperation->collectionName,
+                    'type' => $modelOperation->tableName,
                     'errors' => $validator->errors()->messages(),
                 ];
             }
@@ -155,8 +162,8 @@ class SchemaApiSyncController
 
     private function persistModelOperations(Collection $modelOperations): void
     {
-        DB::transaction(fn() => $modelOperations->each(fn(ModelOperation $op) => match($op->operation) {
-            Operation::create, Operation::update => $op->modelInstance->fill($op->attributes)->isDirty()
+        DB::transaction(fn() => $modelOperations->each(fn(ModelOperation $op) => match($op->op) {
+            Operation::create, Operation::update => $op->modelInstance->fill($op->attr)->isDirty()
                 ? $op->modelInstance->save()
                 : null,
             Operation::delete => $op->modelInstance->delete(),

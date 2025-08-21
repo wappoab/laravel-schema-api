@@ -13,9 +13,9 @@ final readonly class ValidatingModelResolver implements ModelResolverInterface
     {
     }
 
-    public function get(string $table): ?string
+    public function get(string $type): ?string
     {
-        $resolved = $this->inner->get($table);
+        $resolved = $this->inner->get($type);
 
         if($resolved === null) {
             return null;
@@ -25,7 +25,7 @@ final readonly class ValidatingModelResolver implements ModelResolverInterface
             throw new \UnexpectedValueException(sprintf(
                 'Resolved class %s for table %s must extend %s.',
                 $resolved,
-                $table,
+                $type,
                 Model::class
             ));
         }

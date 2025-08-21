@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
 use Wappo\LaravelSchemaApi\Concerns\HasDateFormat;
 
+#[ApiIgnore]
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasUuids, HasDateFormat;

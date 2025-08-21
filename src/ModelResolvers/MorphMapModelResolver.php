@@ -9,8 +9,8 @@ use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 
 final readonly class MorphMapModelResolver implements ModelResolverInterface
 {
-    public function get(string $table): ?string
+    public function get(string $type): ?string
     {
-        return Relation::getMorphedModel($table);
+        return Relation::getMorphedModel($type);
     }
 }

@@ -13,9 +13,9 @@ final readonly class NamespaceModelResolver implements ModelResolverInterface
     {
     }
 
-    public function get(string $table): ?string
+    public function get(string $type): ?string
     {
-        $modelClass = Str::finish($this->namespace, '\\') . Str::studly(Str::singular($table));
+        $modelClass = Str::finish($this->namespace, '\\') . Str::studly(Str::singular($type));
         if (!class_exists($modelClass)) {
             return null;
         }

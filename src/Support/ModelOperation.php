@@ -10,19 +10,20 @@ use Wappo\LaravelSchemaApi\Enums\Operation;
 class ModelOperation
 {
     /**
-     * @param \Wappo\LaravelSchemaApi\Enums\Operation|null $operation
+     * @param \Wappo\LaravelSchemaApi\Enums\Operation|null $op
      * @param mixed|null $id
-     * @param array $attributes
-     * @param string|null $collectionName
+     * @param array $attr
+     * @param string|null $tableName
      * @param \Illuminate\Database\Eloquent\Model|null $modelInstance
      * @param class-string<\Illuminate\Database\Eloquent\Model>|null $modelClass
      * @param class-string<\Illuminate\Http\Resources\Json\JsonResource>|null $resourceClass
      */
     public function __construct(
-        public ?Operation $operation = null,
+        public ?Operation $op = null,
         public mixed $id = null,
-        public array $attributes = [],
-        public ?string $collectionName = null,
+        public ?string $type = null,
+        public ?array $attr = [],
+        public ?string $tableName = null,
         public ?Model $modelInstance = null,
         public ?string $modelClass = null,
         public ?string $resourceClass = null,
