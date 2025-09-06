@@ -62,7 +62,7 @@ final readonly class SchemaApiGetController
         $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
         $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
 
-        return response()->stream(function () use ($item, $model, $flags, $gzipLevel) {
+        return response()->stream(function () use ($type, $item, $model, $flags, $gzipLevel) {
             $stream = fopen('php://output', 'wb');
             if ($gzipLevel > 0) {
                 stream_filter_append(
@@ -76,7 +76,7 @@ final readonly class SchemaApiGetController
             $wrappedItem = [
                 'id' => $model->getKey(),
                 'op' => Operation::create->value,
-                'type' => $model->getTable(),
+                'type' => $type,
                 'attr' => $item,
             ];
             fwrite($stream, json_encode($wrappedItem, $flags) . PHP_EOL);
