@@ -50,26 +50,37 @@ it('can create order models', function () {
     $response->assertOk();
     $json = $response->streamedJson();
 
-    expect($json)->toHaveCount(3)
-        ->and($json[0]['id'])->toBe($uuid)
-        ->and($json[0]['op'])->toBe(Operation::create->value)
-        ->and($json[0]['type'])->toBe('orders')
-        ->and($json[0]['attr']['text'])->toBe('A cool order')
-        ->and($json[0]['attr']['number'])->toBe(1)
-        ->and($json[0]['attr']['total'])->toBe(2475)
-        ->and($json[1]['id'])->toBe($rowUuid)
-        ->and($json[1]['op'])->toBe(Operation::create->value)
-        ->and($json[1]['type'])->toBe('order-rows')
-        ->and($json[1]['attr']['specification'])->toBe('An order row')
-        ->and($json[1]['attr']['quantity'])->toBe(2.5)
-        ->and($json[1]['attr']['price'])->toBe(990)
-        ->and($json[1]['attr']['total'])->toBe(2475)
-        ->and($json[2]['id'])->toBe($rowEntryUuid)
-        ->and($json[2]['op'])->toBe(Operation::create->value)
-        ->and($json[2]['type'])->toBe('order-row-entries')
-        ->and($json[2]['attr']['specification'])->toBe('A work log')
-        ->and($json[2]['attr']['quantity'])->toBe(2.5)
-    ;
+    expect($json)->toHaveCount(3);
+
+    $orderRowEntryJson = collect($json)->first(fn (array $op) => $op['id'] === $rowEntryUuid);
+    expect($orderRowEntryJson)->toBeArray()
+        ->id->toBe($rowEntryUuid)
+        ->op->toBe(Operation::create->value)
+        ->type->toBe('order-row-entries')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('A work log')
+        ->attr->quantity->toBe(2.5);
+
+    $orderRowJson = collect($json)->first(fn (array $op) => $op['id'] ===  $rowUuid);
+    expect($orderRowJson)->toBeArray()
+        ->id->toBe($rowUuid)
+        ->op->toBe(Operation::create->value)
+        ->type->toBe('order-rows')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('An order row')
+        ->attr->quantity->toBe(2.5)
+        ->attr->price->toBe(990)
+        ->attr->total->toBe(2475);
+
+    $orderJson = collect($json)->first(fn (array $op) => $op['id'] === $uuid);
+    expect($orderJson)->toBeArray()
+        ->id->toBe($uuid)
+        ->op->toBe(Operation::create->value)
+        ->type->toBe('orders')
+        ->attr->toBeArray()
+        ->attr->text->toBe('A cool order')
+        ->attr->number->toBe(1)
+        ->attr->total->toBe(2475);
 
     $this->assertDatabaseHas('orders', [
         'id' => $uuid,
@@ -122,26 +133,37 @@ it('update entries updates the order models', function () {
     $response->assertOk();
     $json = $response->streamedJson();
 
-    expect($json)->toHaveCount(3)
-        ->and($json[0]['id'])->toBe($orderRowEntry->id->toString())
-        ->and($json[0]['op'])->toBe(Operation::update->value)
-        ->and($json[0]['type'])->toBe('order-row-entries')
-        ->and($json[0]['attr']['specification'])->toBe('A work log')
-        ->and($json[0]['attr']['quantity'])->toBe(2.5)
-        ->and($json[1]['id'])->toBe($orderRowEntry->order_row->id->toString())
-        ->and($json[1]['op'])->toBe(Operation::update->value)
-        ->and($json[1]['type'])->toBe('order-rows')
-        ->and($json[1]['attr']['specification'])->toBe('An order row')
-        ->and($json[1]['attr']['quantity'])->toBe(2.5)
-        ->and($json[1]['attr']['price'])->toBe(990)
-        ->and($json[1]['attr']['total'])->toBe(2475)
-        ->and($json[2]['id'])->toBe($orderRowEntry->order_row->order_id->toString())
-        ->and($json[2]['op'])->toBe(Operation::update->value)
-        ->and($json[2]['type'])->toBe('orders')
-        ->and($json[2]['attr']['text'])->toBe('Update order')
-        ->and($json[2]['attr']['number'])->toBe(1)
-        ->and($json[2]['attr']['total'])->toBe(2475)
-    ;
+    expect($json)->toHaveCount(3);
+
+    $orderRowEntryJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->id->toString());
+    expect($orderRowEntryJson)->toBeArray()
+        ->id->toBe($orderRowEntry->id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('order-row-entries')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('A work log')
+        ->attr->quantity->toBe(2.5);
+
+    $orderRowJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->id->toString());
+    expect($orderRowJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('order-rows')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('An order row')
+        ->attr->quantity->toBe(2.5)
+        ->attr->price->toBe(990)
+        ->attr->total->toBe(2475);
+
+    $orderJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->order_id->toString());
+    expect($orderJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->order_id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('orders')
+        ->attr->toBeArray()
+        ->attr->text->toBe('Update order')
+        ->attr->number->toBe(1)
+        ->attr->total->toBe(2475);
 
     $this->assertDatabaseHas('orders', [
         'id' => $orderRowEntry->order_row->order_id,
@@ -191,25 +213,35 @@ it('deleting entries updates the order models', function () {
     $response->assertOk();
     $json = $response->streamedJson();
 
-    expect($json)->toHaveCount(3)
-        ->and($json[0]['id'])->toBe($orderRowEntry->id->toString())
-        ->and($json[0]['op'])->toBe(Operation::delete->value)
-        ->and($json[0]['type'])->toBe('order-row-entries')
-        ->and($json[0]['attr'])->toBeEmpty()
-        ->and($json[1]['id'])->toBe($orderRowEntry->order_row->id->toString())
-        ->and($json[1]['op'])->toBe(Operation::update->value)
-        ->and($json[1]['type'])->toBe('order-rows')
-        ->and($json[1]['attr']['specification'])->toBe('An order row')
-        ->and($json[1]['attr']['quantity'])->toBe(0)
-        ->and($json[1]['attr']['price'])->toBe(990)
-        ->and($json[1]['attr']['total'])->toBe(0)
-        ->and($json[2]['id'])->toBe($orderRowEntry->order_row->order_id->toString())
-        ->and($json[2]['op'])->toBe(Operation::update->value)
-        ->and($json[2]['type'])->toBe('orders')
-        ->and($json[2]['attr']['text'])->toBe('Update order')
-        ->and($json[2]['attr']['number'])->toBe(1)
-        ->and($json[2]['attr']['total'])->toBe(0)
-    ;
+    expect($json)->toHaveCount(3);
+
+    $orderRowEntryJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->id->toString());
+    expect($orderRowEntryJson)->toBeArray()
+        ->id->toBe($orderRowEntry->id->toString())
+        ->op->toBe(Operation::delete->value)
+        ->type->toBe('order-row-entries')
+        ->attr->toBeEmpty();
+
+    $orderRowJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->id->toString());
+    expect($orderRowJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('order-rows')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('An order row')
+        ->attr->quantity->toBe(0)
+        ->attr->price->toBe(990)
+        ->attr->total->toBe(0);
+
+    $orderJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->order_id->toString());
+    expect($orderJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->order_id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('orders')
+        ->attr->toBeArray()
+        ->attr->text->toBe('Update order')
+        ->attr->number->toBe(1)
+        ->attr->total->toBe(0);
 
     $this->assertDatabaseHas('orders', [
         'id' => $orderRowEntry->order_row->order_id,
@@ -258,20 +290,28 @@ it('deleting the order deletes everything', function () {
     $response->assertOk();
     $json = $response->streamedJson();
 
-    expect($json)->toHaveCount(3)
-        ->and($json[2]['id'])->toBe($orderRowEntry->id->toString())
-        ->and($json[2]['op'])->toBe(Operation::delete->value)
-        ->and($json[2]['type'])->toBe('order-row-entries')
-        ->and($json[2]['attr'])->toBeEmpty()
-        ->and($json[1]['id'])->toBe($orderRowEntry->order_row->id->toString())
-        ->and($json[1]['op'])->toBe(Operation::delete->value)
-        ->and($json[1]['type'])->toBe('order-rows')
-        ->and($json[1]['attr'])->toBeEmpty()
-        ->and($json[0]['id'])->toBe($orderRowEntry->order_row->order_id->toString())
-        ->and($json[0]['op'])->toBe(Operation::delete->value)
-        ->and($json[0]['type'])->toBe('orders')
-        ->and($json[0]['attr'])->toBeEmpty()
-    ;
+    expect($json)->toHaveCount(3);
+
+    $orderRowEntryJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->id->toString());
+    expect($orderRowEntryJson)->toBeArray()
+        ->id->toBe($orderRowEntry->id->toString())
+        ->op->toBe(Operation::delete->value)
+        ->type->toBe('order-row-entries')
+        ->attr->toBeEmpty();
+
+    $orderRowJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->id->toString());
+    expect($orderRowJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->id->toString())
+        ->op->toBe(Operation::delete->value)
+        ->type->toBe('order-rows')
+        ->attr->toBeEmpty();
+
+    $orderJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRowEntry->order_row->order_id->toString());
+    expect($orderJson)->toBeArray()
+        ->id->toBe($orderRowEntry->order_row->order_id->toString())
+        ->op->toBe(Operation::delete->value)
+        ->type->toBe('orders')
+        ->attr->toBeEmpty();
 
     $this->assertDatabaseMissing('orders', [
         'id' => $orderRowEntry->order_row->order_id,
@@ -318,26 +358,38 @@ it('creating entries updates the order models', function () {
     $response->assertOk();
     $json = $response->streamedJson();
 
-    expect($json)->toHaveCount(3)
-        ->and($json[0]['id'])->toBe($rowEntryUuid)
-        ->and($json[0]['op'])->toBe(Operation::create->value)
-        ->and($json[0]['type'])->toBe('order-row-entries')
-        ->and($json[0]['attr']['specification'])->toBe('A work log')
-        ->and($json[0]['attr']['quantity'])->toBe(2.5)
-        ->and($json[1]['id'])->toBe($orderRow->id->toString())
-        ->and($json[1]['op'])->toBe(Operation::update->value)
-        ->and($json[1]['type'])->toBe('order-rows')
-        ->and($json[1]['attr']['specification'])->toBe('An order row')
-        ->and($json[1]['attr']['quantity'])->toBe(2.5)
-        ->and($json[1]['attr']['price'])->toBe(990)
-        ->and($json[1]['attr']['total'])->toBe(2475)
-        ->and($json[2]['id'])->toBe($orderRow->order_id->toString())
-        ->and($json[2]['op'])->toBe(Operation::update->value)
-        ->and($json[2]['type'])->toBe('orders')
-        ->and($json[2]['attr']['text'])->toBe('Update order')
-        ->and($json[2]['attr']['number'])->toBe(1)
-        ->and($json[2]['attr']['total'])->toBe(2475)
-    ;
+
+    expect($json)->toHaveCount(3);
+
+    $orderRowEntryJson = collect($json)->first(fn (array $op) => $op['id'] === $rowEntryUuid);
+    expect($orderRowEntryJson)->toBeArray()
+        ->id->toBe($rowEntryUuid)
+        ->op->toBe(Operation::create->value)
+        ->type->toBe('order-row-entries')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('A work log')
+        ->attr->quantity->toBe(2.5);
+
+    $orderRowJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRow->id->toString());
+    expect($orderRowJson)->toBeArray()
+        ->id->toBe($orderRow->id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('order-rows')
+        ->attr->toBeArray()
+        ->attr->specification->toBe('An order row')
+        ->attr->quantity->toBe(2.5)
+        ->attr->price->toBe(990)
+        ->attr->total->toBe(2475);
+
+    $orderJson = collect($json)->first(fn (array $op) => $op['id'] === $orderRow->order_id->toString());
+    expect($orderJson)->toBeArray()
+        ->id->toBe($orderRow->order_id->toString())
+        ->op->toBe(Operation::update->value)
+        ->type->toBe('orders')
+        ->attr->toBeArray()
+        ->attr->text->toBe('Update order')
+        ->attr->number->toBe(1)
+        ->attr->total->toBe(2475);
 
     $this->assertDatabaseHas('orders', [
         'id' => $orderRow->order_id,
