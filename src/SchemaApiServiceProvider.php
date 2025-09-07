@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Wappo\LaravelSchemaApi;
 
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Str;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wappo\LaravelSchemaApi\Commands\GenerateClientResources;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ResourceResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ValidationRulesResolverInterface;
+use Wappo\LaravelSchemaApi\Support\ModelOperationCollection;
 use Wappo\LaravelSchemaApi\Support\ValidationRulesResolver;
 
 class SchemaApiServiceProvider extends PackageServiceProvider
@@ -62,5 +62,10 @@ class SchemaApiServiceProvider extends PackageServiceProvider
                 return $app->make(ValidationRulesResolver::class);
             });
         }
+
+        $this->app->scoped(
+            ModelOperationCollection::class,
+            fn () => new ModelOperationCollection(),
+        );
     }
 }

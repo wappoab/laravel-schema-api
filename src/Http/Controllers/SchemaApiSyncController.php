@@ -15,18 +15,22 @@ use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Facades\ValidationRulesResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiSyncRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
+use Wappo\LaravelSchemaApi\Support\ModelOperationCollection;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
 final readonly class SchemaApiSyncController
 {
     public function __construct(
         private TypeToTableMapper $typeToTableMapper,
+        private ModelOperationCollection $modelOperations,
     )
     {
     }
 
     public function __invoke(SchemaApiSyncRequest $request)
     {
+        $this->modelOperations->clear();
+
         try {
             $modelOperations = $this->buildModelOperations($request->validated());
         }
@@ -39,6 +43,7 @@ final readonly class SchemaApiSyncController
             return response()->json($validationErrors, 422);
         }
         $this->persistModelOperations($modelOperations);
+        $modelOperations = $this->mergeCollectedOperations($modelOperations);
 
         $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
         $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
@@ -166,5 +171,41 @@ final readonly class SchemaApiSyncController
                 : null,
             Operation::delete => $op->modelInstance->delete(),
         }));
+    }
+    private function mergeCollectedOperations(Collection $modelOperations): Collection
+    {
+        $collectedOperations = app(ModelOperationCollection::class);
+        $generateModelOperationKey = function (ModelOperation $op): string
+        {
+            return $op->id.'.'.$op->type;
+        };
+
+        $opKeys = $modelOperations
+            ->map(fn (ModelOperation $op) => $generateModelOperationKey($op))
+            ->flip();
+
+        $extraOperations = $collectedOperations->reject(fn (ModelOperation $op) => isset($opKeys[$generateModelOperationKey($op)]))
+            ->groupBy(fn(ModelOperation $op) => $generateModelOperationKey($op))
+            ->map(function (Collection $ops) {
+                return $ops->reduce(function (?ModelOperation $carry, ModelOperation $op) {
+                    if(!$carry) {
+                        return $op;
+                    }
+
+                    if ($op->op === Operation::delete) {
+                        $carry->op = Operation::delete;
+                        return $carry;
+                    }
+
+                    if ($op->op === Operation::create) {
+                        $carry->op = Operation::create;
+                        return $carry;
+                    }
+
+                    return $carry;
+                });
+            })->values();
+        ;
+        return $modelOperations->concat($extraOperations)->values();
     }
 }
