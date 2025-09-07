@@ -32,7 +32,7 @@ jobs:
     name: L${{ matrix.laravel }} - ${{ matrix.stability }} - P${{ matrix.php }} - ${{ matrix.os }}
 
     env:
-      php-extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, pcov
+      php-extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
       key: ${{ matrix.os }}_Laravel${{ matrix.laravel }}_${{ matrix.stability }}_Php${{ matrix.php }}
 
     steps:
@@ -64,7 +64,13 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: ${{ env.php-extensions }}
-          coverage: pcov
+          coverage: xdebug
+
+      - name: Debug PHP & coverage
+        run: |
+          php -v
+          php -m | grep -Ei 'xdebug|pcov' || true
+          php -r 'echo getenv("XDEBUG_MODE") ?: "(no XDEBUG_MODE)"; echo PHP_EOL;'
 
       - name: Setup problem matchers
         run: |
@@ -77,4 +83,6 @@ jobs:
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Execute tests
+        env:
+          XDEBUG_MODE: coverage
         run: composer test-coverage
