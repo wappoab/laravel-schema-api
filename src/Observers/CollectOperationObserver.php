@@ -13,8 +13,6 @@ use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 
 class CollectOperationObserver
 {
-    public bool $afterCommit = true;
-
     public function __construct(
         protected ModelOperationCollection $operations,
         private readonly TableToTypeMapper $tableToTypeMapper,
