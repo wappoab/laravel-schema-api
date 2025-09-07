@@ -150,7 +150,7 @@ final readonly class SchemaApiSyncController
             if ($validator->fails()) {
                 return [
                     'id' => $modelOperation->id,
-                    'type' => $modelOperation->tableName,
+                    'type' => $modelOperation->type,
                     'errors' => $validator->errors()->messages(),
                 ];
             }
