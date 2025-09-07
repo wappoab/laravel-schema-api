@@ -1,9 +1,6 @@
 # This is my package laravel-schema-api
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/wappo/laravel-schema-api.svg?style=flat-square)](https://packagist.org/packages/wappo/laravel-schema-api)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/wappo/laravel-schema-api/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/wappo/laravel-schema-api/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/wappo/laravel-schema-api/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/wappo/laravel-schema-api/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/wappo/laravel-schema-api.svg?style=flat-square)](https://packagist.org/packages/wappo/laravel-schema-api)
+[![Run Tests](https://github.com/wappoab/laravel-schema-api/actions/workflows/run-test.yml/badge.svg)](https://github.com/wappoab/laravel-schema-api/actions/workflows/run-test.yml)
 
 ## Installation
 
