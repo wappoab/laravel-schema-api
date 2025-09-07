@@ -53,16 +53,20 @@ final readonly class SchemaApiGetController
 
         Gate::authorize('view', [$modelClass, $id]);
 
-        $model = $modelClass::findOrFail($id);
+        $attr = $modelClass::whereKey($id)->toBase()->first();
+        if(!$attr) {
+            throw new ModelNotFoundException();
+        }
 
-        $modelResourceClass = ResourceResolver::get($modelClass);
-        $item = $modelResourceClass ? $modelResourceClass::make($model) : $model;
+        if ($resource = ResourceResolver::get($modelClass)) {
+            $attr = $resource::make($attr);
+        }
 
         $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
         $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
         $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
 
-        return response()->stream(function () use ($type, $item, $model, $flags, $gzipLevel) {
+        return response()->stream(function () use ($type, $attr, $id, $flags, $gzipLevel) {
             $stream = fopen('php://output', 'wb');
             if ($gzipLevel > 0) {
                 stream_filter_append(
@@ -74,10 +78,10 @@ final readonly class SchemaApiGetController
             }
 
             $wrappedItem = [
-                'id' => $model->getKey(),
+                'id' => $id,
                 'op' => Operation::create->value,
                 'type' => $type,
-                'attr' => $item,
+                'attr' => $attr,
             ];
             fwrite($stream, json_encode($wrappedItem, $flags) . PHP_EOL);
 
