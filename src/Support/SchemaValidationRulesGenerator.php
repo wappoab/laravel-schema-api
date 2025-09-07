@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 
-class SchemaValidationRulesGenerator
+readonly class SchemaValidationRulesGenerator
 {
     public function __construct(private ColumnRuleMapper $columnRuleMapper)
     {
