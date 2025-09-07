@@ -226,6 +226,43 @@ return new class extends Migration
 
             $table->timestamps();
         });
+
+        Schema::create('orders', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->integer('number');
+            $table->string('text');
+            $table->double('total')->nullable();
+            $table->timestampsTz();
+            $table->softDeletesTz();
+        });
+
+        Schema::create('order_rows', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('order_id')
+                ->references('id')
+                ->on('orders')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
+            $table->string('specification');
+            $table->double('quantity')->nullable();
+            $table->double('price')->nullable();
+            $table->double('total')->nullable();
+            $table->timestampsTz();
+            $table->softDeletesTz();
+        });
+
+        Schema::create('order_row_entries', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('order_row_id')
+                ->references('id')
+                ->on('order_rows')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
+            $table->string('specification');
+            $table->double('quantity');
+            $table->timestampsTz();
+            $table->softDeletesTz();
+        });
     }
 
     /**
@@ -247,5 +284,8 @@ return new class extends Migration
         Schema::dropIfExists('category_post');
         Schema::dropIfExists('secrets');
         Schema::dropIfExists('data_types');
+        Schema::dropIfExists('orders');
+        Schema::dropIfExists('order_rows');
+        Schema::dropIfExists('order_row_entries');
     }
 };
