@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Wappo\LaravelSchemaApi\ResourceResolvers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Wappo\LaravelSchemaApi\Contracts\ResourceResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\SchemaApiJsonResource;
 
@@ -23,7 +24,7 @@ final readonly class GuessResourceNameResolver implements ResourceResolverInterf
         $suggestions = $modelClass::guessResourceName();
 
         /** @var class-string<SchemaApiJsonResource> $candidate */
-        return array_find($suggestions, static fn($candidate) => is_string($candidate)
-            && class_exists($candidate));
+        return Arr::first($suggestions, static fn($candidate) =>
+            is_string($candidate) && class_exists($candidate));
     }
 }
