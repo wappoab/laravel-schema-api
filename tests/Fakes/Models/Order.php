@@ -47,6 +47,11 @@ class Order extends Model
         return $this->hasMany(OrderRow::class);
     }
 
+    public function owner(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     protected static function booted()
     {
         static::deleting(fn(self $order) => $order->rows->each(fn(OrderRow $row) => $row->delete()));

@@ -232,6 +232,11 @@ return new class extends Migration
             $table->integer('number');
             $table->string('text');
             $table->double('total')->nullable();
+            $table->foreignUuid('owner_id')
+                ->references('id')
+                ->on('users')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->timestampsTz();
             $table->softDeletesTz();
         });
