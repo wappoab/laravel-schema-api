@@ -1,6 +1,9 @@
 /tests            export-ignore
+/database         export-ignore
+/resources        export-ignore
 /.claude          export-ignore
 /.github          export-ignore
 /.gitignore       export-ignore
 /.gitattributes   export-ignore
 /phpunit.xml*     export-ignore
+CLAUDE.md         export-ignore
