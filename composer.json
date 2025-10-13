@@ -65,7 +65,5 @@
                 "Wappo\\LaravelSchemaApi\\SchemaApiServiceProvider"
             ]
         }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }
