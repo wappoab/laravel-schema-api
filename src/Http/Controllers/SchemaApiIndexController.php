@@ -65,12 +65,19 @@ final readonly class SchemaApiIndexController
             )
             ->values();
 
+        if($type) {
+            $ops->each(fn(ModelOperation $modelOperation) => Gate::authorize('viewAny', $modelOperation->modelClass));
+        }
+        else {
+            $ops = $ops->filter(fn(ModelOperation $modelOperation) => Gate::allows('viewAny', $modelOperation->modelClass))
+                ->values();
+        }
+
         if ($ops->isEmpty()) {
             throw new ModelNotFoundException('No models found');
         }
 
         $ops
-            ->each(fn(ModelOperation $modelOperation) => Gate::authorize('viewAny', $modelOperation->modelClass))
             ->each(function (ModelOperation $modelOperation) {
                 $modelOperation->resourceClass = ResourceResolver::get($modelOperation->modelClass);
                 $modelOperation->modelInstance = new $modelOperation->modelClass;
