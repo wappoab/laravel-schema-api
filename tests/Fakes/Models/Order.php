@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
 use Wappo\LaravelSchemaApi\Attributes\UseValidationRulesProvider;
 use Wappo\LaravelSchemaApi\Casts\AsUuid;
 use Wappo\LaravelSchemaApi\Concerns\HasDateFormat;
@@ -26,6 +28,7 @@ class Order extends Model
         'number',
         'text',
         'total',
+        'owner_id',
     ];
 
     protected function casts()
@@ -42,14 +45,16 @@ class Order extends Model
         'total' => 0,
     ];
 
+    #[ApiInclude]
     public function rows(): HasMany
     {
         return $this->hasMany(OrderRow::class);
     }
 
-    public function owner(): HasMany
+    #[ApiInclude]
+    public function owner(): BelongsTo
     {
-        return $this->hasMany(User::class);
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     protected static function booted()

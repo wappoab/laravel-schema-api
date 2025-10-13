@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
+use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
 use Wappo\LaravelSchemaApi\Attributes\ApplyQueryModifier;
 use Wappo\LaravelSchemaApi\Contracts\QueryModifierInterface;
 use Wappo\LaravelSchemaApi\Enums\Operation;
@@ -19,6 +20,7 @@ use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiIndexRequest;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
+use Wappo\LaravelSchemaApi\Support\RelationshipStreamer;
 use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
@@ -27,6 +29,7 @@ final readonly class SchemaApiIndexController
     public function __construct(
         private TypeToTableMapper $typeToTableMapper,
         private TableToTypeMapper $tableToTypeMapper,
+        private RelationshipStreamer $relationshipStreamer,
     ) {
     }
 
@@ -138,9 +141,46 @@ final readonly class SchemaApiIndexController
 
                 $query = $this->applyQueryModifier($modelOperation->modelClass, $query);
 
+                // Get relationships to include
+                $includedRelationships = $this->getIncludedRelationships($modelOperation->modelClass);
+                $batchSize = (int) config('schema-api.http.relationship_batch_size', 200);
+
                 $cursor = $query->toBase()->cursor();
+                $batch = [];
+
                 foreach ($cursor as $item) {
+                    // Stream the main item
                     fwrite($stream, json_encode($itemWrapper($item), $flags) . PHP_EOL);
+
+                    // Collect items for batch processing relationships
+                    if (!empty($includedRelationships)) {
+                        $batch[] = $item;
+
+                        // Process batch when it reaches the configured size
+                        if (count($batch) >= $batchSize) {
+                            $this->relationshipStreamer->streamRelationshipsForBatch(
+                                $modelOperation->modelClass,
+                                $batch,
+                                $includedRelationships,
+                                $pkName,
+                                $stream,
+                                $flags
+                            );
+                            $batch = [];
+                        }
+                    }
+                }
+
+                // Process remaining items in the last batch
+                if (!empty($batch) && !empty($includedRelationships)) {
+                    $this->relationshipStreamer->streamRelationshipsForBatch(
+                        $modelOperation->modelClass,
+                        $batch,
+                        $includedRelationships,
+                        $pkName,
+                        $stream,
+                        $flags
+                    );
                 }
             });
             fclose($stream);
@@ -186,5 +226,25 @@ final readonly class SchemaApiIndexController
         }
 
         return $query;
+    }
+
+    /**
+     * @param class-string<\Illuminate\Database\Eloquent\Model> $modelClass
+     * @return array<string>
+     * @throws \ReflectionException
+     */
+    private function getIncludedRelationships(string $modelClass): array
+    {
+        $ref = new ReflectionClass($modelClass);
+        $relationships = [];
+
+        foreach ($ref->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            $attrs = $method->getAttributes(ApiInclude::class);
+            if (!empty($attrs)) {
+                $relationships[] = $method->getName();
+            }
+        }
+
+        return $relationships;
     }
 }

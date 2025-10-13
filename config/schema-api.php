@@ -21,6 +21,7 @@ return [
         'middleware' => env('SCHEMA_API_HTTP_MIDDLEWARE', 'api'),
         'gzip_level' => env('SCHEMA_API_GZIP_LEVEL', 0),
         'json_encode_flags' => env('SCHEMA_API_JSON_ENCODE_FLAGS', JSON_UNESCAPED_UNICODE),
+        'relationship_batch_size' => env('SCHEMA_API_RELATIONSHIP_BATCH_SIZE', 200),
     ],
 
     /*

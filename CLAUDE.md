@@ -100,10 +100,59 @@ The `ColumnRuleMapper` maps database column types to Laravel validation rules (e
 
 ### Model Attributes
 
+**Class-level attributes:**
 - `#[ApiIgnore]` - Exclude model from API entirely
 - `#[ApplyQueryModifier]` - Apply query modifiers (repeatable)
 - `#[UseValidationRulesProvider]` - Custom validation rules provider
 - `#[UseSchemaApiJsonResource]` - Specify custom JSON resource class
+
+**Method-level attributes:**
+- `#[ApiInclude]` - Apply to relationship methods to stream them as root-level entities in index and get endpoints
+
+Example:
+```php
+class Order extends Model
+{
+    #[ApiInclude]
+    public function rows(): HasMany
+    {
+        return $this->hasMany(OrderRow::class);
+    }
+
+    #[ApiInclude]
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // This relationship will NOT be included in the stream
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+}
+```
+
+When calling `GET /schema-api/orders`, the response will stream:
+1. The Order entity
+2. Each OrderRow entity (as separate root-level entities)
+3. The User entity (owner)
+
+All entities are streamed at the root level as separate NDJSON lines, not nested within the parent.
+
+**Performance Note**: The implementation is highly optimized for large datasets:
+- Main query uses `toBase()` to avoid Eloquent model hydration overhead
+- Parent items are collected in configurable batches (default: 200)
+- For each relationship type, a single `whereIn()` query loads all related records for the entire batch
+- Related records also use `toBase()` to avoid hydration
+- Only a single temporary model instance is created per relationship type to introspect foreign keys
+
+This means for 1000 Orders with rows and owner relationships:
+- 1 query for Orders (streaming with cursor)
+- 5 queries total for relationships (1 per batch × 2 relationship types)
+- No N+1 problems, minimal memory usage
+
+Configure batch size via `SCHEMA_API_RELATIONSHIP_BATCH_SIZE` env variable or `config/schema-api.php`.
 
 ### Testing Infrastructure
 
@@ -123,6 +172,7 @@ Key config values in `config/schema-api.php`:
 - `http.base_path` - API route prefix (default: `/schema-api`)
 - `http.middleware` - Middleware group (default: `api`)
 - `http.gzip_level` - Response compression level (0-9)
+- `http.relationship_batch_size` - Number of parent items to batch before loading relationships (default: 200)
 - `model_resolver.driver` - Which resolver implementation to use
 - `resource_resolver.driver` - Which resource resolver to use
 

@@ -8,16 +8,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
 use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
+use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiGetRequest;
+use Wappo\LaravelSchemaApi\Support\RelationshipStreamer;
+use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
 final readonly class SchemaApiGetController
 {
-    public function __construct(private TypeToTableMapper $typeToTableMapper)
-    {
+    public function __construct(
+        private TypeToTableMapper $typeToTableMapper,
+        private RelationshipStreamer $relationshipStreamer,
+    ) {
     }
 
     public function __invoke(string $type, mixed $id, SchemaApiGetRequest $request)
@@ -53,20 +58,29 @@ final readonly class SchemaApiGetController
 
         Gate::authorize('view', [$modelClass, $id]);
 
-        $attr = $modelClass::whereKey($id)->toBase()->first();
-        if(!$attr) {
+        // Use toBase() for efficiency - get raw data
+        $item = $modelClass::whereKey($id)->toBase()->first();
+
+        if(!$item) {
             throw new ModelNotFoundException();
         }
 
-        if ($resource = ResourceResolver::get($modelClass)) {
-            $attr = $resource::make($attr);
+        // Get relationships to include
+        $ref = new \ReflectionClass($modelClass);
+        $includedRelationships = [];
+
+        foreach ($ref->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            $attrs = $method->getAttributes(ApiInclude::class);
+            if (!empty($attrs)) {
+                $includedRelationships[] = $method->getName();
+            }
         }
 
         $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
         $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));
         $gzipHeader = $gzipLevel > 0 ? ['Content-Encoding' => 'gzip'] : [];
 
-        return response()->stream(function () use ($type, $attr, $id, $flags, $gzipLevel) {
+        return response()->stream(function () use ($type, $item, $modelClass, $includedRelationships, $id, $flags, $gzipLevel) {
             $stream = fopen('php://output', 'wb');
             if ($gzipLevel > 0) {
                 stream_filter_append(
@@ -77,6 +91,13 @@ final readonly class SchemaApiGetController
                 );
             }
 
+            // Stream the main item
+            if ($resource = ResourceResolver::get($modelClass)) {
+                $attr = $resource::make($item);
+            } else {
+                $attr = (array) $item;
+            }
+
             $wrappedItem = [
                 'id' => $id,
                 'op' => Operation::create->value,
@@ -84,6 +105,19 @@ final readonly class SchemaApiGetController
                 'attr' => $attr,
             ];
             fwrite($stream, json_encode($wrappedItem, $flags) . PHP_EOL);
+
+            // Stream included relationships if any
+            if (!empty($includedRelationships)) {
+                $pkName = (new $modelClass)->getKeyName();
+                $this->relationshipStreamer->streamRelationshipsForBatch(
+                    $modelClass,
+                    [$item],
+                    $includedRelationships,
+                    $pkName,
+                    $stream,
+                    $flags
+                );
+            }
 
             fclose($stream);
         }, 200, [

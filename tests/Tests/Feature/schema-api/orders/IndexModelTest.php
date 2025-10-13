@@ -28,5 +28,5 @@ it('can list models', function () {
 
     $items = $response->streamedJson();
 
-    expect($items)->toHaveCount(1);
+    expect($items)->toHaveCount(2);
 });
