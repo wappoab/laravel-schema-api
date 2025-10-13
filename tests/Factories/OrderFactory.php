@@ -21,7 +21,13 @@ class OrderFactory extends Factory
             'text' => $this->faker->realText(),
             'number' => $this->faker->randomNumber(),
             'total' => 0,
-            'owner_id' => User::factory(),
         ];
+    }
+
+    public function withOwner(): OrderFactory {
+        return $this->for(
+            User::factory(),
+            'owner',
+        );
     }
 }

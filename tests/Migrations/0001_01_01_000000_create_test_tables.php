@@ -233,6 +233,7 @@ return new class extends Migration
             $table->string('text');
             $table->double('total')->nullable();
             $table->foreignUuid('owner_id')
+                ->nullable()
                 ->references('id')
                 ->on('users')
                 ->cascadeOnDelete()
