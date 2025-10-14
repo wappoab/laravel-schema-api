@@ -107,22 +107,38 @@ The `ColumnRuleMapper` maps database column types to Laravel validation rules (e
 - `#[UseSchemaApiJsonResource]` - Specify custom JSON resource class
 
 **Method-level attributes:**
-- `#[ApiInclude]` - Apply to relationship methods to stream them as root-level entities in index and get endpoints
+- `#[ApiInclude(cascadeDelete: false, forceDelete: false)]` - Apply to relationship methods to:
+  - Stream them as root-level entities in index and get endpoints
+  - Optionally cascade delete to related items when parent is deleted (if `cascadeDelete: true`)
+  - Control hard-delete behavior for models without soft deletes (via `forceDelete`)
+
+Parameters:
+- `cascadeDelete` (bool, default: false) - Whether to delete related items when parent is deleted
+- `forceDelete` (bool, default: false) - Allow hard-deletion of related models that don't use SoftDeletes
 
 Example:
 ```php
 class Order extends Model
 {
-    #[ApiInclude]
+    use HasApiIncludeCascadeDelete; // Enable cascade delete functionality
+
+    #[ApiInclude(cascadeDelete: true)]
     public function rows(): HasMany
     {
-        return $this->hasMany(OrderRow::class);
+        return $this->hasMany(OrderRow::class); // Uses SoftDeletes - safe to cascade
     }
 
-    #[ApiInclude]
+    #[ApiInclude] // cascadeDelete defaults to false
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Hard-delete example (use with caution!)
+    #[ApiInclude(cascadeDelete: true, forceDelete: true)]
+    public function metadata(): HasOne
+    {
+        return $this->hasOne(OrderMetadata::class); // Doesn't use SoftDeletes
     }
 
     // This relationship will NOT be included in the stream
@@ -133,12 +149,36 @@ class Order extends Model
 }
 ```
 
-When calling `GET /schema-api/orders`, the response will stream:
+**In GET endpoints** (`GET /schema-api/orders`):
+The response will stream:
 1. The Order entity
 2. Each OrderRow entity (as separate root-level entities)
 3. The User entity (owner)
 
 All entities are streamed at the root level as separate NDJSON lines, not nested within the parent.
+
+**Cascade Delete Behavior:**
+When using the `HasApiIncludeCascadeDelete` trait, models will automatically:
+- Delete related items marked with `#[ApiInclude(cascadeDelete: true)]` in the `deleting` event
+- Restore related items in the `restoring` event (for soft deletes)
+- **Safety Check**: Related models without SoftDeletes will NOT be deleted unless `forceDelete: true`
+- **Selective Restore**: Only restores related models deleted at the same time as the parent (within 1 second tolerance)
+
+When deleting an Order in the example above:
+- Order rows will be automatically deleted (uses SoftDeletes, cascadeDelete: true)
+- Metadata will be hard-deleted (no SoftDeletes, but forceDelete: true)
+- Owner will NOT be deleted (cascadeDelete: false)
+- The `CollectOperationObserver` tracks all delete operations
+- Sync endpoint response includes delete operations for Order, OrderRows, and Metadata
+
+When restoring an Order:
+- Only OrderRows deleted at approximately the same time as the Order are restored
+- OrderRows deleted before the Order (independently) remain trashed
+- This prevents accidentally restoring stale data that was intentionally deleted earlier
+
+**Safety Features**:
+1. The `forceDelete` flag protects against accidental hard-deletion of related models that don't use SoftDeletes. Models with SoftDeletes can always be cascade-deleted safely. Models without SoftDeletes require explicit `forceDelete: true` to enable cascade deletion.
+2. The selective restore mechanism (1-second tolerance) ensures only related models deleted as part of the cascade are restored, preventing unwanted restoration of independently deleted records.
 
 **Performance Note**: The implementation is highly optimized for large datasets:
 - Main query uses `toBase()` to avoid Eloquent model hydration overhead

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
 use Wappo\LaravelSchemaApi\Attributes\UseValidationRulesProvider;
 use Wappo\LaravelSchemaApi\Casts\AsUuid;
+use Wappo\LaravelSchemaApi\Concerns\HasApiIncludeCascadeDelete;
 use Wappo\LaravelSchemaApi\Concerns\HasDateFormat;
 use Wappo\LaravelSchemaApi\Observers\CollectOperationObserver;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Validators\OrderValidationRulesProvider;
@@ -21,7 +22,7 @@ use Wappo\LaravelSchemaApi\Tests\Fakes\Validators\OrderValidationRulesProvider;
 #[UseValidationRulesProvider(OrderValidationRulesProvider::class), ObservedBy(CollectOperationObserver::class)]
 class Order extends Model
 {
-    use HasFactory, HasUuids, HasDateFormat, SoftDeletes;
+    use HasFactory, HasUuids, HasDateFormat, SoftDeletes, HasApiIncludeCascadeDelete;
 
     protected $fillable = [
         'id',
@@ -45,7 +46,7 @@ class Order extends Model
         'total' => 0,
     ];
 
-    #[ApiInclude]
+    #[ApiInclude(cascadeDelete: true)]
     public function rows(): HasMany
     {
         return $this->hasMany(OrderRow::class);
@@ -57,9 +58,9 @@ class Order extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
-    protected static function booted()
+    #[ApiInclude(cascadeDelete: true, forceDelete: true)]
+    public function links(): HasMany
     {
-        static::deleting(fn(self $order) => $order->rows->each(fn(OrderRow $row) => $row->delete()));
-        static::restoring(fn(self $order) => $order->rows()->withTrashed()->get()->each(fn(OrderRow $row) => $row->restore()));
+        return $this->hasMany(OrderLink::class);
     }
 }

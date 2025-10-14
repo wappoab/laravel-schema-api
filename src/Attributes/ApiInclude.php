@@ -9,4 +9,9 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD)]
 class ApiInclude
 {
+    public function __construct(
+        public bool $cascadeDelete = false,
+        public bool $forceDelete = false,
+    ) {
+    }
 }

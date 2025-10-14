@@ -24,6 +24,18 @@ return [
         'relationship_batch_size' => env('SCHEMA_API_RELATIONSHIP_BATCH_SIZE', 200),
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Soft delete restore tolerance
+    |--------------------------------------------------------------------------
+    |
+    | This accounts for minor timing differences in the deletion process
+    | Default: Allow 1 second tolerance for cascade deletes that happen in quick succession
+    |
+    */
+    'restore_soft_delete_tolerance_in_seconds' => env('SCHEMA_API_RESTORE_SOFT_DELETE_TOLERANCE_IN_SECONDS', 1),
+
     /*
     |--------------------------------------------------------------------------
     | Model resolver

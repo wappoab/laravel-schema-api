@@ -57,7 +57,7 @@ class OrderRow extends Model
             $total = static::query()
                 ->where('order_id', $row->order_id)
                 ->sum('total');
-            $row->order->update(['total' => $total]);
+            $row->order()->withTrashed()->first()->update(['total' => $total]);
         };
         $recalcRowTotal = function (self $row) {
             $row->total = $row->quantity * $row->price;

@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Enums\PostStatus;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Category;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Order;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\OrderLink;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\OrderRow;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\User;
 
 it('can sync insert models', function () {
     $uuid = Str::uuid()->toString();
@@ -372,4 +377,208 @@ it('fails validation on create post from rules provider', function () {
     $this->assertDatabaseMissing('posts', [
         'id' => $uuid,
     ]);
+});
+
+it('cascades delete to ApiInclude relationships with cascadeDelete flag', function () {
+    // Create an order with rows and owner
+    $user = User::factory()->create([
+        'id' => '00000000-0005-0000-0000-000000000001',
+    ]);
+
+    $order = Order::factory()->create([
+        'id' => '00000000-0005-0000-0000-000000000002',
+        'number' => 1002,
+        'text' => 'Test Order for Delete',
+        'owner_id' => $user->id,
+    ]);
+
+    $orderRow1 = OrderRow::factory()->create([
+        'id' => '00000000-0005-0000-0000-000000000003',
+        'order_id' => $order->id,
+        'specification' => 'Row 1',
+        'quantity' => 1,
+        'price' => 10.00,
+    ]);
+
+    $orderRow2 = OrderRow::factory()->create([
+        'id' => '00000000-0005-0000-0000-000000000004',
+        'order_id' => $order->id,
+        'specification' => 'Row 2',
+        'quantity' => 2,
+        'price' => 20.00,
+    ]);
+
+    // Delete the order
+    $operations = [
+        [
+            'op' => Operation::delete->value,
+            'type' => 'orders',
+            'id' => $order->id,
+        ],
+    ];
+
+    $response = $this->putJson(route('schema-api.sync'), $operations);
+
+    $response->assertOk();
+    $json = $response->streamedJson();
+
+    expect($json)->toHaveCount(3);
+
+    $deletedIds = collect($json)->pluck('id')->all();
+
+    expect($deletedIds)->toContain($order->id->toString())
+        ->and($deletedIds)->toContain($orderRow1->id->toString())
+        ->and($deletedIds)->toContain($orderRow2->id->toString());
+
+    foreach ($json as $item) {
+        expect($item['op'])->toBe(Operation::delete->value);
+    }
+
+    $this->assertSoftDeleted('orders', ['id' => $order->id]);
+    $this->assertSoftDeleted('order_rows', ['id' => $orderRow1->id]);
+    $this->assertSoftDeleted('order_rows', ['id' => $orderRow2->id]);
+
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+    ]);
+});
+
+it('force deletes related models without soft deletes when forceDelete is true', function () {
+    // Create an order with links (which don't use SoftDeletes)
+    $order = Order::factory()->create([
+        'id' => '00000000-0006-0000-0000-000000000001',
+        'number' => 1003,
+        'text' => 'Test Order with Links',
+    ]);
+
+    $link1 = OrderLink::factory()->create([
+        'id' => '00000000-0006-0000-0000-000000000002',
+        'order_id' => $order->id,
+        'url' => 'https://example.com/link1',
+    ]);
+
+    $link2 = OrderLink::factory()->create([
+        'id' => '00000000-0006-0000-0000-000000000003',
+        'order_id' => $order->id,
+        'url' => 'https://example.com/link2',
+    ]);
+
+    // Verify links exist
+    $this->assertDatabaseHas('order_links', ['id' => $link1->id]);
+    $this->assertDatabaseHas('order_links', ['id' => $link2->id]);
+
+    // Delete the order
+    $operations = [
+        [
+            'op' => Operation::delete->value,
+            'type' => 'orders',
+            'id' => $order->id,
+        ],
+    ];
+
+    $response = $this->putJson(route('schema-api.sync'), $operations);
+
+    $response->assertOk();
+    $json = $response->streamedJson();
+
+    // Should include delete operations for:
+    // 1. The order itself
+    // 2. The two order links (HasMany with forceDelete: true)
+    expect($json)->toHaveCount(3);
+
+    // Collect IDs from the response
+    $deletedIds = collect($json)->pluck('id')->all();
+
+    expect($deletedIds)->toContain($order->id->toString())
+        ->and($deletedIds)->toContain($link1->id->toString())
+        ->and($deletedIds)->toContain($link2->id->toString());
+
+    // All operations should be deletes
+    foreach ($json as $item) {
+        expect($item['op'])->toBe(Operation::delete->value);
+    }
+
+    // Verify the order is soft deleted
+    $this->assertSoftDeleted('orders', ['id' => $order->id]);
+
+    // Verify the links are HARD deleted (not soft deleted, completely removed)
+    // OrderLink doesn't use SoftDeletes, so forceDelete: true allows hard deletion
+    $this->assertDatabaseMissing('order_links', ['id' => $link1->id]);
+    $this->assertDatabaseMissing('order_links', ['id' => $link2->id]);
+});
+
+it('only restores related models deleted at the same time as parent', closure: function () {
+    Carbon::setTestNow('2025-01-01 00:00:00');
+    // Create an order with 3 order rows
+    $order = Order::factory()->create([
+        'id' => '00000000-0007-0000-0000-000000000001',
+        'number' => 1004,
+        'text' => 'Test Order for Selective Restore',
+    ]);
+
+    $row1 = OrderRow::factory()->create([
+        'id' => '00000000-0007-0000-0000-000000000002',
+        'order_id' => $order->id,
+        'specification' => 'Row 1 - deleted earlier',
+        'quantity' => 1,
+        'price' => 10.00,
+    ]);
+
+    $row2 = OrderRow::factory()->create([
+        'id' => '00000000-0007-0000-0000-000000000003',
+        'order_id' => $order->id,
+        'specification' => 'Row 2 - deleted with order',
+        'quantity' => 2,
+        'price' => 20.00,
+    ]);
+
+    $row3 = OrderRow::factory()->create([
+        'id' => '00000000-0007-0000-0000-000000000004',
+        'order_id' => $order->id,
+        'specification' => 'Row 3 - deleted with order',
+        'quantity' => 3,
+        'price' => 30.00,
+    ]);
+
+    Carbon::setTestNow('2025-01-02 00:00:00');
+    $row1->delete();
+    $this->assertSoftDeleted('order_rows', ['id' => $row1->id]);
+
+    Carbon::setTestNow('2025-01-03 00:00:00');
+    $order->delete();
+
+    $this->assertSoftDeleted('orders', ['id' => $order->id]);
+    $this->assertSoftDeleted('order_rows', ['id' => $row1->id]);
+    $this->assertSoftDeleted('order_rows', ['id' => $row2->id]);
+    $this->assertSoftDeleted('order_rows', ['id' => $row3->id]);
+
+    $order->refresh();
+    $row1->refresh();
+    $row2->refresh();
+    $row3->refresh();
+
+    $orderDeletedAt = $order->deleted_at;
+    $row1DeletedAt = $row1->deleted_at;
+    $row2DeletedAt = $row2->deleted_at;
+    $row3DeletedAt = $row3->deleted_at;
+
+    // Verify row1 was deleted much earlier than the order
+    expect($row1DeletedAt->diffInSeconds($orderDeletedAt))->toBeGreaterThan(60);
+
+    // Verify row2 and row3 were deleted at approximately the same time as the order
+    expect(abs($row2DeletedAt->diffInSeconds($orderDeletedAt)))->toBeLessThanOrEqual(1);
+    expect(abs($row3DeletedAt->diffInSeconds($orderDeletedAt)))->toBeLessThanOrEqual(1);
+
+    // Now restore the order
+    $order->restore();
+
+    // Verify the order is restored
+    $this->assertDatabaseHas('orders', ['id' => $order->id, 'deleted_at' => null]);
+
+    // Verify row2 and row3 are restored (they were deleted with the order)
+    $this->assertDatabaseHas('order_rows', ['id' => $row2->id, 'deleted_at' => null]);
+    $this->assertDatabaseHas('order_rows', ['id' => $row3->id, 'deleted_at' => null]);
+
+    // Verify row1 is STILL deleted (it was deleted before the order)
+    $this->assertSoftDeleted('order_rows', ['id' => $row1->id]);
 });

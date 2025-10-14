@@ -269,6 +269,17 @@ return new class extends Migration
             $table->timestampsTz();
             $table->softDeletesTz();
         });
+
+        Schema::create('order_links', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('url');
+            $table->foreignUuid('order_id')
+                ->references('id')
+                ->on('orders')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
+            $table->timestampsTz();
+        });
     }
 
     /**
@@ -293,5 +304,6 @@ return new class extends Migration
         Schema::dropIfExists('orders');
         Schema::dropIfExists('order_rows');
         Schema::dropIfExists('order_row_entries');
+        Schema::dropIfExists('order_links');
     }
 };

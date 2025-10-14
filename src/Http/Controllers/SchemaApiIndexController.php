@@ -6,7 +6,6 @@ namespace Wappo\LaravelSchemaApi\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -110,7 +109,7 @@ final readonly class SchemaApiIndexController
                 $since = $request->validated('since');
                 $pkName = $modelOperation->modelInstance->getKeyName();
 
-                if ($since && in_array(SoftDeletes::class, class_uses_recursive($modelOperation->modelClass), true)) {
+                if ($since && $modelOperation->modelClass::isSoftDeletable()) {
                     $createdAtColumn = $modelOperation->modelInstance->getCreatedAtColumn();
                     $updatedAtColumn = $modelOperation->modelInstance->getUpdatedAtColumn();
                     $deletedAtColumn = $modelOperation->modelInstance->getDeletedAtColumn();
