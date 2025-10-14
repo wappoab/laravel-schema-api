@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use ReflectionClass;
 use ReflectionMethod;
 use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
+use Wappo\LaravelSchemaApi\Support\EloquentBackports;
 
 trait HasApiIncludeCascadeDelete
 {
@@ -81,7 +82,7 @@ trait HasApiIncludeCascadeDelete
                 $relation = $model->{$relationshipName}();
                 $relatedModel = $relation->getRelated();
 
-                if (!$relatedModel::isSoftDeletable()) {
+                if (!EloquentBackports::isSoftDeletable($relatedModel)) {
                     continue;
                 }
 
@@ -126,7 +127,7 @@ trait HasApiIncludeCascadeDelete
      */
     protected static function shouldDeleteRelatedModel($relatedModel, ApiInclude $apiInclude): bool
     {
-        return $relatedModel::isSoftDeletable() || $apiInclude->forceDelete;
+        return EloquentBackports::isSoftDeletable($relatedModel) || $apiInclude->forceDelete;
     }
 
     /**
@@ -143,7 +144,7 @@ trait HasApiIncludeCascadeDelete
     protected static function shouldRestoreRelatedModel($relatedModel, $parentDeletedAt): bool
     {
         // Related model must use soft deletes
-        if (!$relatedModel::isSoftDeletable()) {
+        if (!EloquentBackports::isSoftDeletable($relatedModel)) {
             return false;
         }
 

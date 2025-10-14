@@ -18,6 +18,7 @@ use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiIndexRequest;
+use Wappo\LaravelSchemaApi\Support\EloquentBackports;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
 use Wappo\LaravelSchemaApi\Support\RelationshipStreamer;
 use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
@@ -109,7 +110,7 @@ final readonly class SchemaApiIndexController
                 $since = $request->validated('since');
                 $pkName = $modelOperation->modelInstance->getKeyName();
 
-                if ($since && $modelOperation->modelClass::isSoftDeletable()) {
+                if ($since && EloquentBackports::isSoftDeletable($modelOperation->modelClass)) {
                     $createdAtColumn = $modelOperation->modelInstance->getCreatedAtColumn();
                     $updatedAtColumn = $modelOperation->modelInstance->getUpdatedAtColumn();
                     $deletedAtColumn = $modelOperation->modelInstance->getDeletedAtColumn();
