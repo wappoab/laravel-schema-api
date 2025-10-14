@@ -1,44 +1,361 @@
-# This is my package laravel-schema-api
+# Laravel Schema API
 
 [![Run Tests](https://github.com/wappoab/laravel-schema-api/actions/workflows/run-test.yml/badge.svg)](https://github.com/wappoab/laravel-schema-api/actions/workflows/run-test.yml)
 
+Automatically expose your Laravel Eloquent models through a RESTful HTTP API with zero configuration. Perfect for building mobile apps, SPAs, or syncing data between systems.
+
+## What Does This Package Do?
+
+Laravel Schema API automatically creates API endpoints for all your Eloquent models, giving you:
+
+- **Instant REST API**: GET, PUT, DELETE operations on all your models without writing controllers
+- **Streaming JSON Responses**: Memory-efficient NDJSON streaming for large datasets
+- **Incremental Sync**: Built-in `?since` parameter to fetch only changed/deleted records
+- **Automatic Relationships**: Stream related models with the `#[ApiInclude]` attribute
+- **Cascade Deletes**: Automatically delete/restore related models when parents change
+- **Schema-Based Validation**: Auto-generates validation rules from your database schema
+- **Type-Safe Client Generation**: Generate TypeScript types and Vue forms from your models
+
 ## Installation
 
-You can install the package via composer:
+Install the package via composer:
 
 ```bash
 composer require wappo/laravel-schema-api
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --tag="laravel-schema-api-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
+Publish the config file (optional):
 
 ```bash
 php artisan vendor:publish --tag="laravel-schema-api-config"
 ```
 
-This is the contents of the published config file:
+That's it! Your models are now accessible via `/schema-api/{table-name}`.
+
+## Quick Start
+
+Once installed, you can immediately access your models:
+
+```bash
+# List all posts
+GET /schema-api/posts
+
+# Get a specific post
+GET /schema-api/posts/123
+
+# Create, update, or delete records
+PUT /schema-api/sync
+```
+
+### Example: Fetching Data
+
+```bash
+curl https://your-app.com/schema-api/posts
+```
+
+Response (NDJSON format - one JSON object per line):
+```json
+{"id":"abc-123","type":"posts","attr":{"title":"Hello World","content":"..."}}
+{"id":"def-456","type":"posts","attr":{"title":"Another Post","content":"..."}}
+```
+
+### Example: Incremental Sync
+
+Fetch only records modified since a specific timestamp:
+
+```bash
+# Get posts updated since 2025-01-01
+GET /schema-api/posts?since=2025-01-01T00:00:00Z
+```
+
+This returns both updated records and deleted IDs (if using soft deletes).
+
+### Example: Creating/Updating Records
+
+```bash
+curl -X PUT https://your-app.com/schema-api/sync \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "op": "create",
+      "type": "posts",
+      "id": "new-uuid",
+      "attr": {
+        "title": "New Post",
+        "content": "Hello!"
+      }
+    },
+    {
+      "op": "update",
+      "type": "posts",
+      "id": "existing-uuid",
+      "attr": {
+        "title": "Updated Title"
+      }
+    },
+    {
+      "op": "delete",
+      "type": "posts",
+      "id": "old-uuid"
+    }
+  ]'
+```
+
+## Advanced Usage
+
+### Including Relationships
+
+Stream related models alongside parent records using the `#[ApiInclude]` attribute:
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
+
+class Order extends Model
+{
+    #[ApiInclude]
+    public function rows(): HasMany
+    {
+        return $this->hasMany(OrderRow::class);
+    }
+
+    #[ApiInclude]
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+```
+
+Now when you fetch orders, you'll also get the rows and owner streamed as separate root-level entities:
+
+```bash
+GET /schema-api/orders/123
+```
+
+Response:
+```json
+{"id":"123","type":"orders","attr":{"number":1001}}
+{"id":"row-1","type":"order_rows","attr":{"specification":"Item 1"}}
+{"id":"row-2","type":"order_rows","attr":{"specification":"Item 2"}}
+{"id":"user-1","type":"users","attr":{"name":"John Doe"}}
+```
+
+### Cascade Delete & Restore
+
+Automatically delete or restore related models when the parent changes:
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\ApiInclude;
+use Wappo\LaravelSchemaApi\Concerns\HasApiIncludeCascadeDelete;
+
+class Order extends Model
+{
+    use HasApiIncludeCascadeDelete, SoftDeletes;
+
+    // Related rows will be automatically deleted when order is deleted
+    #[ApiInclude(cascadeDelete: true)]
+    public function rows(): HasMany
+    {
+        return $this->hasMany(OrderRow::class);
+    }
+
+    // For models without SoftDeletes, you must explicitly allow hard deletion
+    #[ApiInclude(cascadeDelete: true, forceDelete: true)]
+    public function metadata(): HasOne
+    {
+        return $this->hasOne(OrderMetadata::class);
+    }
+}
+```
+
+**Safety Features:**
+- Models with `SoftDeletes` are always safe to cascade delete
+- Models without `SoftDeletes` require `forceDelete: true` to prevent accidental data loss
+- When restoring a soft-deleted parent, only related records deleted at approximately the same time are restored (configurable tolerance)
+
+### Validation
+
+Validation rules are automatically generated from your database schema:
+
+```php
+// varchar(255) → string|max:255
+// integer → integer
+// datetime → date
+// etc.
+```
+
+Or provide custom validation rules:
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\UseValidationRulesProvider;
+use Wappo\LaravelSchemaApi\Contracts\ValidationRulesProviderInterface;
+
+#[UseValidationRulesProvider(PostValidationRules::class)]
+class Post extends Model
+{
+    // ...
+}
+
+class PostValidationRules implements ValidationRulesProviderInterface
+{
+    public function getRules(): array
+    {
+        return [
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|unique:posts',
+            'content' => 'required|string',
+        ];
+    }
+}
+```
+
+### Query Modifiers
+
+Customize how models are queried using attributes:
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\ApplyQueryModifier;
+use Wappo\LaravelSchemaApi\QueryModifiers\LatestFirstModifier;
+use Wappo\LaravelSchemaApi\QueryModifiers\FilterQueryModifier;
+
+#[ApplyQueryModifier(LatestFirstModifier::class)]
+#[ApplyQueryModifier(FilterQueryModifier::class)]
+class Post extends Model
+{
+    // Posts will be ordered by created_at DESC
+    // and support filtering via query parameters
+}
+```
+
+Built-in modifiers:
+- `LatestFirstModifier` - Order by `created_at DESC`
+- `UpdatedFirstModifier` - Order by `updated_at DESC`
+- `SortQueryModifier` - Custom sorting
+- `FilterQueryModifier` - Filter by query parameters
+
+### Exclude Models from API
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\ApiIgnore;
+
+#[ApiIgnore]
+class AdminUser extends Model
+{
+    // This model will NOT be exposed via the API
+}
+```
+
+### Custom JSON Resources
+
+Use your own JSON resource classes:
+
+```php
+use Wappo\LaravelSchemaApi\Attributes\UseSchemaApiJsonResource;
+
+#[UseSchemaApiJsonResource(PostResource::class)]
+class Post extends Model
+{
+    // ...
+}
+```
+
+## API Endpoints
+
+### List Models
+
+```
+GET /schema-api/{table}
+```
+
+**Query Parameters:**
+- `?since=2025-01-01T00:00:00Z` - Incremental sync (returns modified and deleted records)
+- `?gzip` - Enable gzip compression
+
+**Response Format:** NDJSON (newline-delimited JSON)
+
+### Get Single Model
+
+```
+GET /schema-api/{table}/{id}
+```
+
+**Response Format:** NDJSON with the model and any `#[ApiInclude]` relationships
+
+### List All Available Models
+
+```
+GET /schema-api
+```
+
+Returns metadata about all exposed models.
+
+### Batch Sync
+
+```
+PUT /schema-api/sync
+```
+
+**Request Body:** Array of operations
+```json
+[
+  {
+    "op": "create|update|delete",
+    "type": "table-name",
+    "id": "record-id",
+    "attr": { /* attributes */ }
+  }
+]
+```
+
+**Response:** NDJSON with the result of each operation
+
+## Configuration
+
+Publish and edit `config/schema-api.php`:
 
 ```php
 return [
+    'date_format' => 'Y-m-d\TH:i:s.u\Z', // ISO 8601 format
+
+    'http' => [
+        'base_path' => '/schema-api',
+        'middleware' => ['api'],
+        'gzip_level' => 6, // 0-9, compression level
+        'relationship_batch_size' => 200, // Batch size for loading relationships
+    ],
+
+    'restore_soft_delete_tolerance_in_seconds' => 1, // Tolerance for cascade restore
+
+    'model_resolver' => [
+        'driver' => 'namespace', // 'namespace' or 'morph-map'
+    ],
+
+    'resource_resolver' => [
+        'driver' => 'namespace', // How to find JSON resource classes
+    ],
 ];
 ```
 
-Optionally, you can publish the views using
+## Performance
+
+The package is optimized for large datasets:
+
+- **Streaming Responses**: Uses cursor pagination and NDJSON to handle millions of records without memory issues
+- **Efficient Relationship Loading**: Batches parent records and uses `whereIn()` to avoid N+1 queries
+- **Optional Compression**: Enable gzip compression with `?gzip` parameter
+- **No Model Hydration**: Uses raw queries (`toBase()`) for better performance
+
+Example: Streaming 1 million records uses constant memory (~50MB) instead of loading everything into RAM.
+
+## Client Code Generation
+
+Generate TypeScript types and Vue forms from your models:
 
 ```bash
-php artisan vendor:publish --tag="laravel-schema-api-views"
+php artisan app:generate-client-resources
 ```
 
-## Usage
-
-Just install the package and you models will be exposed through http.
+This reads your model schemas and generates type-safe client code for your frontend.
 
 ## Testing
 
