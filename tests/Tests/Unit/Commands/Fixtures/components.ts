@@ -3,6 +3,7 @@ import { type App as AppType } from 'vue';
 import CategoryForm from "@/components/forms/CategoryForm.vue";
 import CategoryPostForm from "@/components/forms/CategoryPostForm.vue";
 import DataTypeForm from "@/components/forms/DataTypeForm.vue";
+import OrderLinkForm from "@/components/forms/OrderLinkForm.vue";
 import OrderRowEntryForm from "@/components/forms/OrderRowEntryForm.vue";
 import OrderRowForm from "@/components/forms/OrderRowForm.vue";
 import OrderForm from "@/components/forms/OrderForm.vue";
@@ -20,6 +21,9 @@ export function registerFormComponents(app: AppType): void {
     app.component("DataTypeForm", DataTypeForm);
     app.component("data_types", DataTypeForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\DataType", DataTypeForm);
+    app.component("OrderLinkForm", OrderLinkForm);
+    app.component("order_links", OrderLinkForm);
+    app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\OrderLink", OrderLinkForm);
     app.component("OrderRowEntryForm", OrderRowEntryForm);
     app.component("order_row_entries", OrderRowEntryForm);
     app.component("Wappo\\LaravelSchemaApi\\Tests\\Fakes\\Models\\OrderRowEntry", OrderRowEntryForm);

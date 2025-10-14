@@ -6,6 +6,7 @@ import type { CollectionDocumentBase } from "sylviejs/database/collection/collec
 import { useCategoryStore } from "@/stores/collections/categories.ts";
 import { useCategoryPostStore } from "@/stores/collections/category_posts.ts";
 import { useDataTypeStore } from "@/stores/collections/data_types.ts";
+import { useOrderLinkStore } from "@/stores/collections/order_links.ts";
 import { useOrderRowEntryStore } from "@/stores/collections/order_row_entries.ts";
 import { useOrderRowStore } from "@/stores/collections/order_rows.ts";
 import { useOrderStore } from "@/stores/collections/orders.ts";
@@ -16,6 +17,7 @@ import { useUserStore } from "@/stores/collections/users.ts";
 import { type Category } from "@/models";
 import { type CategoryPost } from "@/models";
 import { type DataType } from "@/models";
+import { type OrderLink } from "@/models";
 import { type OrderRowEntry } from "@/models";
 import { type OrderRow } from "@/models";
 import { type Order } from "@/models";
@@ -28,6 +30,7 @@ export interface CollectionStoreMap {
     categories: ReturnType<typeof useCategoryStore>;
     category_posts: ReturnType<typeof useCategoryPostStore>;
     data_types: ReturnType<typeof useDataTypeStore>;
+    order_links: ReturnType<typeof useOrderLinkStore>;
     order_row_entries: ReturnType<typeof useOrderRowEntryStore>;
     order_rows: ReturnType<typeof useOrderRowStore>;
     orders: ReturnType<typeof useOrderStore>;
@@ -52,6 +55,11 @@ export interface ModelMap {
         store: ReturnType<typeof useDataTypeStore>,
         model: DataType,
         document: DataType & CollectionDocumentBase,
+    }
+    order_links: {
+        store: ReturnType<typeof useOrderLinkStore>,
+        model: OrderLink,
+        document: OrderLink & CollectionDocumentBase,
     }
     order_row_entries: {
         store: ReturnType<typeof useOrderRowEntryStore>,
@@ -89,6 +97,7 @@ export const useCollectionStore = defineStore("collections", () => {
     const categoryStore = useCategoryStore();
     const categoryPostStore = useCategoryPostStore();
     const dataTypeStore = useDataTypeStore();
+    const orderLinkStore = useOrderLinkStore();
     const orderRowEntryStore = useOrderRowEntryStore();
     const orderRowStore = useOrderRowStore();
     const orderStore = useOrderStore();
@@ -100,6 +109,7 @@ export const useCollectionStore = defineStore("collections", () => {
             categories: categoryStore,
             category_posts: categoryPostStore,
             data_types: dataTypeStore,
+            order_links: orderLinkStore,
             order_row_entries: orderRowEntryStore,
             order_rows: orderRowStore,
             orders: orderStore,
@@ -117,6 +127,7 @@ export const useCollectionStore = defineStore("collections", () => {
         changes += categoryStore.changesCount;
         changes += categoryPostStore.changesCount;
         changes += dataTypeStore.changesCount;
+        changes += orderLinkStore.changesCount;
         changes += orderRowEntryStore.changesCount;
         changes += orderRowStore.changesCount;
         changes += orderStore.changesCount;
@@ -130,6 +141,7 @@ export const useCollectionStore = defineStore("collections", () => {
         categoryStore.flushChanges();
         categoryPostStore.flushChanges();
         dataTypeStore.flushChanges();
+        orderLinkStore.flushChanges();
         orderRowEntryStore.flushChanges();
         orderRowStore.flushChanges();
         orderStore.flushChanges();
@@ -142,6 +154,7 @@ export const useCollectionStore = defineStore("collections", () => {
             categoryStore.loadRecordsIfNeeded();
             categoryPostStore.loadRecordsIfNeeded();
             dataTypeStore.loadRecordsIfNeeded();
+            orderLinkStore.loadRecordsIfNeeded();
             orderRowEntryStore.loadRecordsIfNeeded();
             orderRowStore.loadRecordsIfNeeded();
             orderStore.loadRecordsIfNeeded();
