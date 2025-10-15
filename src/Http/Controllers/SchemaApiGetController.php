@@ -14,7 +14,6 @@ use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
 use Wappo\LaravelSchemaApi\Http\Requests\SchemaApiGetRequest;
 use Wappo\LaravelSchemaApi\Support\RelationshipStreamer;
-use Wappo\LaravelSchemaApi\Support\TableToTypeMapper;
 use Wappo\LaravelSchemaApi\Support\TypeToTableMapper;
 
 final readonly class SchemaApiGetController

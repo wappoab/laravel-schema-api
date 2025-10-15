@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Wappo\LaravelSchemaApi\Broadcasting\ModelOperationBroadcast;
 use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
