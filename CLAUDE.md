@@ -101,7 +101,9 @@ The `ColumnRuleMapper` maps database column types to Laravel validation rules (e
 ### Model Attributes
 
 **Class-level attributes:**
-- `#[ApiIgnore]` - Exclude model from API entirely
+- `#[ApiIgnore(shouldBroadcast: false)]` - Exclude model from API entirely
+  - `shouldBroadcast` (bool, default: false) - Whether to broadcast model changes even when excluded from API
+  - Use `#[ApiIgnore(shouldBroadcast: true)]` to broadcast changes for internal models that should not be exposed via HTTP endpoints
 - `#[ApplyQueryModifier]` - Apply query modifiers (repeatable)
 - `#[UseValidationRulesProvider]` - Custom validation rules provider
 - `#[UseSchemaApiJsonResource]` - Specify custom JSON resource class
@@ -263,7 +265,9 @@ Broadcasts only from the sync endpoint (`PUT /schema-api/sync`). This mode:
 Broadcasts from Eloquent model events (`created`, `updated`, `deleted`, `restored`). This mode:
 - Captures all model changes, regardless of source (sync endpoint, console commands, direct Eloquent operations, etc.)
 - More comprehensive coverage for complex applications
-- Automatically respects `#[ApiIgnore]` attribute on models
+- Respects `#[ApiIgnore]` attribute - models with this attribute will NOT broadcast by default
+- Use `#[ApiIgnore(shouldBroadcast: true)]` to broadcast changes for models excluded from the API
+- Authorization is handled exclusively by `ModelViewAuthorizerInterface` / Gate policies
 - Broadcasts happen immediately when model events fire
 - Recommended for applications with multiple entry points for data changes
 
@@ -294,6 +298,25 @@ interface ModelViewAuthorizerInterface
     public function getUserIdsWhoCanView(Model $model): Collection;
 }
 ```
+
+### Channel Authorization
+
+The package automatically registers channel authorization for the `user.{id}` private channel in `routes/channels.php`:
+
+```php
+Broadcast::channel('user.{id}', function ($user, $id) {
+    // Compare as strings to support both integer IDs and UUIDs
+    return (string) $user->id === (string) $id;
+});
+```
+
+This ensures that:
+- Only authenticated users can subscribe to channels
+- Users can only subscribe to their own channel (`user.{userId}`)
+- Supports both integer IDs and UUID IDs (or any other ID format)
+- Unauthorized subscription attempts return 403 Forbidden
+
+**Note**: Your Laravel application must have broadcasting configured with a driver (Pusher, Ably, Redis, etc.). See [Laravel Broadcasting Documentation](https://laravel.com/docs/broadcasting) for setup instructions.
 
 ### Broadcast Event
 

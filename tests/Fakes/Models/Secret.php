@@ -35,10 +35,12 @@ use Wappo\LaravelSchemaApi\Tests\Factories\SecretFactory;
  * @method static Builder<static>|Secret whereUpdatedAt($value)
  * @mixin \Eloquent
  */
-#[ApiIgnore]
+#[ApiIgnore(shouldBroadcast: true)]
 class Secret extends Model
 {
     use HasUuids, HasFactory, HasDateFormat;
+
+    protected $fillable = ['launch_code', 'nuke_payload', 'is_armed'];
 
     protected function casts(): array
     {

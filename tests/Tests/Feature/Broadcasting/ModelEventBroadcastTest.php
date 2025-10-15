@@ -7,6 +7,7 @@ use Wappo\LaravelSchemaApi\Broadcasting\ModelOperationBroadcast;
 use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
 use Wappo\LaravelSchemaApi\Listeners\ModelEventBroadcastListener;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Post;
+use Wappo\LaravelSchemaApi\Tests\Fakes\Models\Secret;
 use Wappo\LaravelSchemaApi\Tests\Fakes\Models\User;
 
 beforeEach(function () {
@@ -164,7 +165,7 @@ it('broadcasts when a model is restored via Eloquent', function () {
     });
 });
 
-it('broadcasts for models with ApiIgnore attribute (they may have leaked via relationships)', function () {
+it('does not broadcast for models with ApiIgnore attribute by default', function () {
     Event::fake([ModelOperationBroadcast::class]);
 
     $user1 = User::factory()->create();
@@ -184,16 +185,48 @@ it('broadcasts for models with ApiIgnore attribute (they may have leaked via rel
     // Register the event listener manually for tests (after mocking authorizer)
     Event::subscribe(ModelEventBroadcastListener::class);
 
-    // Create a User (which has #[ApiIgnore] but may have leaked via #[ApiInclude] relationships)
+    // Create a User (which has #[ApiIgnore] without shouldBroadcast flag)
     $newUser = User::factory()->create();
 
-    // Assert that ModelOperationBroadcast WAS dispatched
-    // Authorization is handled by ModelViewAuthorizerInterface, not by #[ApiIgnore]
-    Event::assertDispatched(ModelOperationBroadcast::class, function ($event) use ($user1, $newUser) {
+    // Assert that ModelOperationBroadcast was NOT dispatched
+    // #[ApiIgnore] prevents broadcasting by default
+    Event::assertNotDispatched(ModelOperationBroadcast::class);
+});
+
+it('broadcasts for models with ApiIgnore(shouldBroadcast: true)', function () {
+    Event::fake([ModelOperationBroadcast::class]);
+
+    $user1 = User::factory()->create();
+
+    // Mock the authorizer BEFORE subscribing (listener gets resolved at subscription time)
+    $this->app->bind(ModelViewAuthorizerInterface::class, function () use ($user1) {
+        return new class($user1) implements ModelViewAuthorizerInterface {
+            public function __construct(private $user1) {}
+
+            public function getUserIdsWhoCanView($model): \Illuminate\Support\Collection
+            {
+                return collect([$this->user1->id]);
+            }
+        };
+    });
+
+    // Register the event listener manually for tests (after mocking authorizer)
+    Event::subscribe(ModelEventBroadcastListener::class);
+
+    // Create a Secret (which has #[ApiIgnore(shouldBroadcast: true)])
+    $secret = Secret::factory()->create([
+        'launch_code' => 'TOP-SECRET',
+        'nuke_payload' => 'CLASSIFIED',
+        'is_armed' => true,
+    ]);
+
+    // Assert that ModelOperationBroadcast WAS dispatched despite ApiIgnore
+    // because shouldBroadcast is true
+    Event::assertDispatched(ModelOperationBroadcast::class, function ($event) use ($user1, $secret) {
         return $event->userId === $user1->id
-            && $event->operation->id === $newUser->id
+            && $event->operation->id === $secret->id
             && $event->operation->op->value === 'C'
-            && $event->operation->type === 'users';
+            && $event->operation->type === 'secrets';
     });
 });
 
