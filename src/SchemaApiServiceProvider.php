@@ -28,6 +28,7 @@ class SchemaApiServiceProvider extends PackageServiceProvider
             ->name('laravel-schema-api')
             ->hasConfigFile()
             ->hasRoute('api')
+            ->hasRoute('channels')
             ->hasCommand(GenerateClientResources::class);
     }
 
