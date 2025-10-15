@@ -237,14 +237,35 @@ Broadcasting is disabled by default. Enable it in `config/schema-api.php`:
 ```php
 'broadcasting' => [
     'enabled' => env('SCHEMA_API_BROADCASTING_ENABLED', false),
+    'mode' => env('SCHEMA_API_BROADCASTING_MODE', 'sync'), // 'sync' or 'model-events'
 ],
 ```
 
-Or via environment variable:
+Or via environment variables:
 
 ```env
 SCHEMA_API_BROADCASTING_ENABLED=true
+SCHEMA_API_BROADCASTING_MODE=model-events
 ```
+
+### Broadcasting Modes
+
+The package supports two broadcasting modes:
+
+#### 1. `sync` Mode (Default)
+Broadcasts only from the sync endpoint (`PUT /schema-api/sync`). This mode:
+- Broadcasts changes after the database transaction commits
+- Only captures changes made through the sync endpoint
+- Most predictable and transaction-safe
+- Recommended for applications that exclusively use the sync endpoint
+
+#### 2. `model-events` Mode
+Broadcasts from Eloquent model events (`created`, `updated`, `deleted`, `restored`). This mode:
+- Captures all model changes, regardless of source (sync endpoint, console commands, direct Eloquent operations, etc.)
+- More comprehensive coverage for complex applications
+- Automatically respects `#[ApiIgnore]` attribute on models
+- Broadcasts happen immediately when model events fire
+- Recommended for applications with multiple entry points for data changes
 
 ### User Authorization
 

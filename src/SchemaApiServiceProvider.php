@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Wappo\LaravelSchemaApi;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Wappo\LaravelSchemaApi\Broadcasting\GateBasedModelViewAuthorizer;
 use Wappo\LaravelSchemaApi\Broadcasting\ModelOperationBroadcaster;
 use Wappo\LaravelSchemaApi\Commands\GenerateClientResources;
+use Wappo\LaravelSchemaApi\Contracts\ModelOperationBroadcasterInterface;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
 use Wappo\LaravelSchemaApi\Contracts\ResourceResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ValidationRulesResolverInterface;
+use Wappo\LaravelSchemaApi\Listeners\ModelEventBroadcastListener;
 use Wappo\LaravelSchemaApi\Support\ModelOperationCollection;
 use Wappo\LaravelSchemaApi\Support\ValidationRulesResolver;
 
@@ -73,6 +76,22 @@ class SchemaApiServiceProvider extends PackageServiceProvider
         }
 
         $this->app->scoped( ModelOperationCollection::class, fn () => new ModelOperationCollection());
-        $this->app->singleton(ModelOperationBroadcaster::class, fn () => new ModelOperationBroadcaster());
+
+        if (!$this->app->bound(ModelOperationBroadcasterInterface::class)) {
+            $this->app->singleton(ModelOperationBroadcasterInterface::class, function (Application $app) {
+                return $app->make(ModelOperationBroadcaster::class);
+            });
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        if (config('schema-api.broadcasting.enabled', false)) {
+            $mode = config('schema-api.broadcasting.mode', 'sync');
+
+            if ($mode === 'model-events') {
+                Event::subscribe(ModelEventBroadcastListener::class);
+            }
+        }
     }
 }

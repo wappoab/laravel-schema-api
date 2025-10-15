@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Wappo\LaravelSchemaApi\Broadcasting;
 
 use Illuminate\Support\Collection;
+use Wappo\LaravelSchemaApi\Contracts\ModelOperationBroadcasterInterface;
 use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
 use Wappo\LaravelSchemaApi\Support\ModelOperation;
 
-class ModelOperationBroadcaster
+class ModelOperationBroadcaster implements ModelOperationBroadcasterInterface
 {
+    public function __construct(
+        protected ModelViewAuthorizerInterface $authorizer
+    ) {}
     /**
      * Broadcast a collection of model operations to all users who can view them.
      *
@@ -18,10 +22,6 @@ class ModelOperationBroadcaster
      */
     public function broadcast(Collection $operations): void
     {
-        if (!config('schema-api.broadcasting.enabled', false)) {
-            return;
-        }
-
         $operations->each(function (ModelOperation $operation) {
             $this->broadcastOperation($operation);
         });
@@ -40,9 +40,7 @@ class ModelOperationBroadcaster
             return;
         }
 
-        // Resolve authorizer lazily to ensure we get the current binding
-        $authorizer = app(ModelViewAuthorizerInterface::class);
-        $userIds = $authorizer->getUserIdsWhoCanView($operation->modelInstance);
+        $userIds = $this->authorizer->getUserIdsWhoCanView($operation->modelInstance);
 
         foreach ($userIds as $userId) {
             ModelOperationBroadcast::dispatch($userId, $operation);

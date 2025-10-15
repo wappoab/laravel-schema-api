@@ -34,9 +34,17 @@ return [
     | broadcast to private user channels (user.{id}) for users who can
     | view the model.
     |
+    | Mode options:
+    | - 'sync': Broadcast only from sync endpoint (default)
+    |           Only broadcasts when changes come through PUT /schema-api/sync
+    | - 'model-events': Broadcast from Eloquent model events (created, updated, deleted, restored)
+    |                   Captures ALL changes including sync endpoint, console commands, direct Eloquent operations, etc.
+    |                   Recommended for most applications
+    |
     */
     'broadcasting' => [
         'enabled' => env('SCHEMA_API_BROADCASTING_ENABLED', false),
+        'mode' => env('SCHEMA_API_BROADCASTING_MODE', 'sync'), // 'sync' or 'model-events'
     ],
 
 
