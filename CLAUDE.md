@@ -224,6 +224,91 @@ The `SchemaApiServiceProvider` registers:
 - API routes from `routes/api.php`
 - Artisan command `GenerateClientResources`
 
+## Broadcasting
+
+### Overview
+
+The package supports broadcasting of ModelOperations to private user channels. When enabled, all model changes (create, update, delete) are broadcast to users who can view the affected models.
+
+### Configuration
+
+Broadcasting is disabled by default. Enable it in `config/schema-api.php`:
+
+```php
+'broadcasting' => [
+    'enabled' => env('SCHEMA_API_BROADCASTING_ENABLED', false),
+],
+```
+
+Or via environment variable:
+
+```env
+SCHEMA_API_BROADCASTING_ENABLED=true
+```
+
+### User Authorization
+
+The package uses the `ModelViewAuthorizerInterface` to determine which users can view a model. The default implementation (`GateBasedModelViewAuthorizer`) uses Laravel's Gate to check the `view` ability for each user.
+
+To customize authorization logic, bind your own implementation:
+
+```php
+// In a service provider
+$this->app->singleton(ModelViewAuthorizerInterface::class, function () {
+    return new YourCustomAuthorizer();
+});
+```
+
+Your custom authorizer must implement:
+
+```php
+interface ModelViewAuthorizerInterface
+{
+    /**
+     * Get all user IDs that can view the given model.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return \Illuminate\Support\Collection<int, int> Collection of user IDs
+     */
+    public function getUserIdsWhoCanView(Model $model): Collection;
+}
+```
+
+### Broadcast Event
+
+Changes are broadcast via the `ModelOperationBroadcast` event to private channels:
+
+- **Channel**: `user.{userId}` (private channel)
+- **Event name**: `model.operation`
+- **Data structure**:
+  ```json
+  {
+    "id": "uuid-or-id",
+    "type": "table-name",
+    "op": "C|U|D",
+    "attr": {...}
+  }
+  ```
+
+### Client-Side Setup
+
+Configure Laravel Echo to listen for changes:
+
+```javascript
+Echo.private(`user.${userId}`)
+  .listen('.model.operation', (operation) => {
+    console.log('Model changed:', operation);
+    // Update your UI based on the operation
+  });
+```
+
+### Performance Considerations
+
+- Broadcasting happens after the database transaction commits
+- Each user who can view the model receives a separate broadcast
+- The `ModelViewAuthorizerInterface` is called once per operation
+- For models with many authorized users, consider implementing caching in your custom authorizer
+
 ## Key Design Patterns
 
 1. **Streaming Responses**: Uses `response()->stream()` with NDJSON to handle large datasets without memory issues
@@ -231,3 +316,4 @@ The `SchemaApiServiceProvider` registers:
 3. **Attribute-Based Configuration**: Uses PHP 8 attributes for model-level configuration
 4. **Operation Tracking**: `ModelOperationCollection` tracks CRUD operations during sync requests
 5. **Type Mapping**: `TableToTypeMapper` and `TypeToTableMapper` convert between table names and type aliases
+6. **Broadcasting**: ModelOperations can be broadcast to authorized users via WebSocket channels

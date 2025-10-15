@@ -7,8 +7,11 @@ namespace Wappo\LaravelSchemaApi;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Wappo\LaravelSchemaApi\Broadcasting\GateBasedModelViewAuthorizer;
+use Wappo\LaravelSchemaApi\Broadcasting\ModelOperationBroadcaster;
 use Wappo\LaravelSchemaApi\Commands\GenerateClientResources;
 use Wappo\LaravelSchemaApi\Contracts\ModelResolverInterface;
+use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
 use Wappo\LaravelSchemaApi\Contracts\ResourceResolverInterface;
 use Wappo\LaravelSchemaApi\Contracts\ValidationRulesResolverInterface;
 use Wappo\LaravelSchemaApi\Support\ModelOperationCollection;
@@ -63,9 +66,13 @@ class SchemaApiServiceProvider extends PackageServiceProvider
             });
         }
 
-        $this->app->scoped(
-            ModelOperationCollection::class,
-            fn () => new ModelOperationCollection(),
-        );
+        if (!$this->app->bound(ModelViewAuthorizerInterface::class)) {
+            $this->app->singleton(ModelViewAuthorizerInterface::class, function (Application $app) {
+                return $app->make(GateBasedModelViewAuthorizer::class);
+            });
+        }
+
+        $this->app->scoped( ModelOperationCollection::class, fn () => new ModelOperationCollection());
+        $this->app->singleton(ModelOperationBroadcaster::class, fn () => new ModelOperationBroadcaster());
     }
 }

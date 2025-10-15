@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Wappo\LaravelSchemaApi\Broadcasting\ModelOperationBroadcaster;
 use Wappo\LaravelSchemaApi\Enums\Operation;
 use Wappo\LaravelSchemaApi\Facades\ModelResolver;
 use Wappo\LaravelSchemaApi\Facades\ResourceResolver;
@@ -23,6 +24,7 @@ final readonly class SchemaApiSyncController
     public function __construct(
         private TypeToTableMapper $typeToTableMapper,
         private ModelOperationCollection $modelOperations,
+        private ModelOperationBroadcaster $broadcaster,
     )
     {
     }
@@ -44,6 +46,7 @@ final readonly class SchemaApiSyncController
         }
         $this->persistModelOperations($modelOperations);
         $modelOperations = $this->mergeCollectedOperations($modelOperations);
+        $this->broadcaster->broadcast($modelOperations);
 
         $flags = (int) config('schema-api.http.json_encode_flags', JSON_UNESCAPED_UNICODE);
         $gzipLevel = (int) ($request->validated('gzip') ?? config('schema-api.http.gzip_level', 0));

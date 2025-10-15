@@ -24,6 +24,21 @@ return [
         'relationship_batch_size' => env('SCHEMA_API_RELATIONSHIP_BATCH_SIZE', 200),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Broadcasting
+    |--------------------------------------------------------------------------
+    |
+    | Enable broadcasting of ModelOperations to user channels.
+    | When enabled, all model changes (create, update, delete) will be
+    | broadcast to private user channels (user.{id}) for users who can
+    | view the model.
+    |
+    */
+    'broadcasting' => [
+        'enabled' => env('SCHEMA_API_BROADCASTING_ENABLED', false),
+    ],
+
 
     /*
     |--------------------------------------------------------------------------
