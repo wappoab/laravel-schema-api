@@ -9,6 +9,7 @@ Automatically expose your Laravel Eloquent models through a RESTful HTTP API wit
 Laravel Schema API automatically creates API endpoints for all your Eloquent models, giving you:
 
 - **Instant REST API**: GET, PUT, DELETE operations on all your models without writing controllers
+- **Real-Time Broadcasting**: WebSocket notifications when data changes (via Laravel Echo)
 - **Streaming JSON Responses**: Memory-efficient NDJSON streaming for large datasets
 - **Incremental Sync**: Built-in `?since` parameter to fetch only changed/deleted records
 - **Automatic Relationships**: Stream related models with the `#[ApiInclude]` attribute
@@ -245,6 +246,83 @@ class AdminUser extends Model
 }
 ```
 
+If you want to exclude a model from the HTTP API but still broadcast its changes via WebSockets:
+
+```php
+#[ApiIgnore(shouldBroadcast: true)]
+class InternalAuditLog extends Model
+{
+    // Not exposed via HTTP, but changes are broadcast to authorized users
+}
+```
+
+### Real-Time Broadcasting
+
+Get instant notifications when data changes using Laravel's broadcasting system:
+
+```php
+// config/schema-api.php
+'broadcasting' => [
+    'enabled' => true,
+    'mode' => 'model-events', // or 'sync'
+],
+```
+
+**Two Broadcasting Modes:**
+
+1. **`sync` mode** (default) - Only broadcasts changes from the `/schema-api/sync` endpoint
+   - Most predictable and transaction-safe
+   - Best for apps that exclusively use the sync endpoint
+
+2. **`model-events` mode** - Broadcasts all Eloquent model changes
+   - Captures changes from sync endpoint, console commands, direct Eloquent operations, etc.
+   - Respects `#[ApiIgnore]` - won't broadcast excluded models (unless `shouldBroadcast: true`)
+   - Best for apps with multiple entry points for data changes
+
+**Client-Side Setup:**
+
+Configure Laravel Echo to listen for real-time updates:
+
+```javascript
+// Subscribe to your user's private channel
+Echo.private(`user.${userId}`)
+  .listen('.model.operation', (operation) => {
+    // operation = { id, type, op: 'C'|'U'|'D', attr: {...} }
+
+    if (operation.op === 'C') {
+      // Add new record to your UI
+    } else if (operation.op === 'U') {
+      // Update existing record
+    } else if (operation.op === 'D') {
+      // Remove deleted record
+    }
+  });
+```
+
+**Authorization:**
+
+By default, the package checks Laravel Gates to determine which users can view a model:
+
+```php
+// In your AuthServiceProvider
+Gate::define('view', function (User $user, Model $model) {
+    // Return true if $user can view $model
+    return $user->id === $model->user_id;
+});
+```
+
+For custom authorization logic, bind your own implementation:
+
+```php
+use Wappo\LaravelSchemaApi\Contracts\ModelViewAuthorizerInterface;
+
+$this->app->singleton(ModelViewAuthorizerInterface::class, function () {
+    return new YourCustomAuthorizer();
+});
+```
+
+**Important:** Make sure you have [Laravel Broadcasting](https://laravel.com/docs/broadcasting) configured with a driver like Pusher, Ably, or Redis.
+
 ### Custom JSON Resources
 
 Use your own JSON resource classes:
@@ -322,6 +400,11 @@ return [
         'middleware' => ['api'],
         'gzip_level' => 6, // 0-9, compression level
         'relationship_batch_size' => 200, // Batch size for loading relationships
+    ],
+
+    'broadcasting' => [
+        'enabled' => false, // Enable WebSocket broadcasting
+        'mode' => 'sync', // 'sync' or 'model-events'
     ],
 
     'restore_soft_delete_tolerance_in_seconds' => 1, // Tolerance for cascade restore
