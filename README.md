@@ -28,7 +28,7 @@ composer require wappo/laravel-schema-api
 Publish the config file (optional):
 
 ```bash
-php artisan vendor:publish --tag="laravel-schema-api-config"
+php artisan vendor:publish --tag="schema-api-config"
 ```
 
 That's it! Your models are now accessible via `/schema-api/{table-name}`.
