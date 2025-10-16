@@ -230,7 +230,9 @@ it('allows viewing a single model when authorized', function () {
     ]));
 
     $response->assertOk();
-    $json = $response->json();
+    $response->assertHeader('Content-Type', 'application/stream+json');
+
+    $json = $response->streamedJson()->toArray()[0];
 
     expect($json['id'])->toBe($post->id)
         ->and($json['attr']['title'])->toBe('Test Post');
@@ -256,6 +258,7 @@ it('allows viewing list of models when authorized', function () {
     $response = $this->getJson(route('schema-api.index', ['table' => 'posts']));
 
     $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/stream+json');
     $json = $response->streamedJson();
 
     expect($json)->toHaveCount(3);
